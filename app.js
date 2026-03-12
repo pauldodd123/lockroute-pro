@@ -523,6 +523,7 @@ const app = {
     generateSuggestions() {
         const container = document.getElementById('suggestions-list');
         const date = document.getElementById('job-date').value;
+        const postcode = document.getElementById('job-postcode').value.trim().toUpperCase();
         const duration = parseInt(document.getElementById('job-duration').value) || 60;
 
         if (!date) {
@@ -530,19 +531,20 @@ const app = {
             return;
         }
 
-        const slots = this.findAvailableSlots(date, duration);
+        const slots = this.findAvailableSlots(date, duration, postcode);
 
         if (slots.length === 0) {
-            // Try next available days
-            const nextSlots = this.findNextAvailableDay(date, duration);
+            // Try next available days (location-aware)
+            const nextSlots = this.findNextAvailableDay(date, duration, postcode);
             if (nextSlots.length > 0) {
                 container.innerHTML = `
                     <span style="font-size:12px;color:#92400e;display:block;margin-bottom:8px;">
                         No slots on ${this.formatDateShort(date)}. Try:
                     </span>
                     ${nextSlots.map(s => `
-                        <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')">
-                            ${s.label}
+                        <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                                title="${s.reason || ''}">
+                            ${s.label}${s.tag ? ' ' + s.tag : ''}
                         </button>
                     `).join('')}
                 `;
@@ -552,83 +554,257 @@ const app = {
             return;
         }
 
-        container.innerHTML = slots.map(s => `
-            <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')">
-                ${s.label}
-            </button>
-        `).join('');
+        // If we have a postcode, check if this day has nearby jobs
+        const nearbyWarning = this.getNearbyWarning(date, postcode, slots);
+
+        container.innerHTML =
+            (nearbyWarning ? `<span style="font-size:12px;color:#92400e;display:block;margin-bottom:8px;">${nearbyWarning.message}</span>` : '') +
+            slots.map(s => `
+                <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                        title="${s.reason || ''}">
+                    ${s.label}${s.tag ? ' ' + s.tag : ''}
+                </button>
+            `).join('') +
+            (nearbyWarning && nearbyWarning.betterDays.length > 0 ? `
+                <span style="font-size:12px;color:#92400e;display:block;margin-top:10px;margin-bottom:6px;">
+                    📍 Or pick a day with nearby jobs:
+                </span>
+                ${nearbyWarning.betterDays.map(s => `
+                    <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                            title="${s.reason || ''}" style="border-color:#10b981;color:#065f46;">
+                        ${s.label}${s.tag ? ' ' + s.tag : ''}
+                    </button>
+                `).join('')}
+            ` : '');
     },
 
-    findAvailableSlots(dateStr, durationMins) {
-        const existingJobs = this.getJobsForDate(dateStr);
+    // Check if the selected day has jobs far from the new postcode, and suggest better days
+    getNearbyWarning(dateStr, postcode, currentSlots) {
+        if (!postcode || !this.getPostcodeInfo(postcode)) return null;
+
+        const existingJobs = this.getJobsForDate(dateStr).filter(j => j.status !== 'cancelled');
+        if (existingJobs.length === 0) return null; // Empty day, no issue
+
+        // Check travel to all existing jobs on this day
+        const travelTimes = existingJobs.map(j => ({
+            job: j,
+            travel: this.estimateTravelMinutes(postcode, j.postcode),
+        }));
+        const nearestTravel = Math.min(...travelTimes.map(t => t.travel));
+
+        // If closest job is within 20 min travel, this day is fine
+        if (nearestTravel <= 20) return null;
+
+        const duration = parseInt(document.getElementById('job-duration').value) || 60;
+
+        // This day's jobs are all far away — find better days
+        const betterDays = this.findNearbyDays(dateStr, postcode, duration);
+
+        return {
+            message: `⚠️ Jobs on this day are ${nearestTravel}+ min away from ${postcode}. This means extra travel.`,
+            betterDays,
+        };
+    },
+
+    // Find days in the next 2 weeks that have jobs near the given postcode
+    findNearbyDays(fromDateStr, postcode, durationMins) {
+        const results = [];
+        const startDate = new Date(fromDateStr + 'T00:00:00');
+
+        for (let i = -7; i <= 14; i++) {
+            if (i === 0) continue; // skip the current date
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+
+            // Don't suggest past dates
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (d < today) continue;
+
+            const dayOfWeek = d.getDay();
+            if (!this.settings.workingDays.includes(dayOfWeek)) continue;
+
+            const dateStr = d.toISOString().split('T')[0];
+            const dayJobs = this.getJobsForDate(dateStr).filter(j => j.status !== 'cancelled');
+
+            if (dayJobs.length === 0) continue; // We want days WITH existing nearby jobs
+
+            // Check if any job on this day is near the new postcode
+            const nearestTravel = Math.min(...dayJobs.map(j => this.estimateTravelMinutes(postcode, j.postcode)));
+            if (nearestTravel > 20) continue; // Not close enough
+
+            // Find a slot on this day
+            const slots = this.findAvailableSlots(dateStr, durationMins, postcode);
+            if (slots.length === 0) continue;
+
+            const bestSlot = slots[0]; // Already sorted by proximity
+            bestSlot.tag = `~${nearestTravel} min travel`;
+            bestSlot.reason = `Near ${dayJobs.find(j => this.estimateTravelMinutes(postcode, j.postcode) === nearestTravel)?.postcode || 'existing'} job`;
+            results.push(bestSlot);
+
+            if (results.length >= 3) break;
+        }
+
+        return results;
+    },
+
+    findAvailableSlots(dateStr, durationMins, newPostcode) {
+        const existingJobs = this.getJobsForDate(dateStr).filter(j => j.status !== 'cancelled');
         const workStart = this.timeToMinutes(this.settings.workStart);
         const workEnd = this.timeToMinutes(this.settings.workEnd);
-        const travel = this.settings.defaultTravel;
         const buffer = this.settings.bufferTime;
 
-        // Build blocked periods
+        // Build blocked periods with actual travel times based on postcodes
         const blocked = [];
 
-        // Add existing jobs (with travel + buffer)
         for (const job of existingJobs) {
             const start = this.timeToMinutes(job.time);
-            const end = start + job.duration + travel + buffer;
-            blocked.push({ start: start - travel - buffer, end });
+            // Travel time from/to this job depends on the new job's postcode
+            const travelToJob = newPostcode ? this.estimateTravelMinutes(newPostcode, job.postcode) : this.settings.defaultTravel;
+            const end = start + job.duration + buffer;
+            // Block: can't start new job within travelToJob mins before this job starts,
+            // and can't start until travelToJob mins after this job ends
+            blocked.push({
+                start: start - travelToJob - durationMins, // earliest the new job could start and finish + travel before this job
+                end: end + travelToJob,                     // earliest the new job could start after this job + travel
+                jobPostcode: job.postcode,
+                jobTime: start,
+                jobEnd: end,
+            });
         }
 
         // Add lunch break
         if (this.settings.lunchEnabled) {
             const lunchStart = this.timeToMinutes(this.settings.lunchStart);
-            blocked.push({ start: lunchStart, end: lunchStart + this.settings.lunchDuration });
+            blocked.push({ start: lunchStart - durationMins, end: lunchStart + this.settings.lunchDuration, jobPostcode: null, jobTime: lunchStart, jobEnd: lunchStart + this.settings.lunchDuration });
         }
 
         // Sort blocked periods
         blocked.sort((a, b) => a.start - b.start);
 
-        // Find gaps
+        // Merge overlapping blocked periods
+        const merged = [];
+        for (const block of blocked) {
+            if (merged.length > 0 && block.start <= merged[merged.length - 1].end) {
+                merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, block.end);
+            } else {
+                merged.push({ ...block });
+            }
+        }
+
+        // Find gaps where the new job fits
         const slots = [];
         let cursor = workStart;
 
-        for (const block of blocked) {
-            if (cursor + durationMins <= block.start) {
-                slots.push({
-                    date: dateStr,
-                    time: this.minutesToTime(cursor),
-                    label: this.getFriendlyDateTime(dateStr, this.minutesToTime(cursor)),
-                });
+        for (const block of merged) {
+            const gapStart = Math.max(cursor, workStart);
+            const gapEnd = block.start + durationMins; // block.start is already offset by duration
+            if (gapStart + durationMins <= gapEnd && gapStart + durationMins <= workEnd) {
+                // Find which adjacent job makes this slot good
+                const slotInfo = this.getSlotInfo(gapStart, existingJobs, newPostcode, dateStr);
+                slots.push(slotInfo);
             }
             cursor = Math.max(cursor, block.end);
         }
 
         // Check after last block
         if (cursor + durationMins <= workEnd) {
-            slots.push({
-                date: dateStr,
-                time: this.minutesToTime(cursor),
-                label: this.getFriendlyDateTime(dateStr, this.minutesToTime(cursor)),
+            const slotInfo = this.getSlotInfo(cursor, existingJobs, newPostcode, dateStr);
+            slots.push(slotInfo);
+        }
+
+        // Sort: prefer slots near existing jobs (lower travel), then by time
+        if (newPostcode && this.getPostcodeInfo(newPostcode)) {
+            slots.sort((a, b) => {
+                // Prioritise slots adjacent to nearby jobs
+                if (a.nearestTravel !== b.nearestTravel) return a.nearestTravel - b.nearestTravel;
+                return this.timeToMinutes(a.time) - this.timeToMinutes(b.time);
             });
         }
 
         return slots.slice(0, 5);
     },
 
-    findNextAvailableDay(fromDateStr, durationMins) {
+    // Build info about a slot — travel to nearest job, label, tag
+    getSlotInfo(startMinutes, existingJobs, newPostcode, dateStr) {
+        const timeStr = this.minutesToTime(startMinutes);
+        const label = this.getFriendlyDateTime(dateStr, timeStr);
+
+        let nearestTravel = Infinity;
+        let nearestPostcode = null;
+        let tag = '';
+        let reason = '';
+
+        if (newPostcode && this.getPostcodeInfo(newPostcode) && existingJobs.length > 0) {
+            for (const job of existingJobs) {
+                const travel = this.estimateTravelMinutes(newPostcode, job.postcode);
+                if (travel < nearestTravel) {
+                    nearestTravel = travel;
+                    nearestPostcode = job.postcode;
+                }
+            }
+
+            if (nearestTravel <= 10) {
+                tag = '📍 nearby';
+                reason = `Only ~${nearestTravel} min from ${nearestPostcode} job`;
+            } else if (nearestTravel <= 20) {
+                tag = `~${nearestTravel} min travel`;
+                reason = `${nearestTravel} min from ${nearestPostcode} job`;
+            } else {
+                tag = `⚠️ ${nearestTravel} min travel`;
+                reason = `${nearestTravel} min travel to nearest job (${nearestPostcode})`;
+            }
+        } else {
+            nearestTravel = 0;
+        }
+
+        return { date: dateStr, time: timeStr, label, tag, reason, nearestTravel };
+    },
+
+    findNextAvailableDay(fromDateStr, durationMins, newPostcode) {
         const results = [];
         const startDate = new Date(fromDateStr + 'T00:00:00');
 
-        for (let i = 1; i <= 14; i++) {
-            const d = new Date(startDate);
-            d.setDate(d.getDate() + i);
-            const dayOfWeek = d.getDay();
+        // First pass: find days with nearby jobs
+        if (newPostcode && this.getPostcodeInfo(newPostcode)) {
+            for (let i = 1; i <= 14; i++) {
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                const dayOfWeek = d.getDay();
+                if (!this.settings.workingDays.includes(dayOfWeek)) continue;
 
-            if (!this.settings.workingDays.includes(dayOfWeek)) continue;
+                const dateStr = d.toISOString().split('T')[0];
+                const dayJobs = this.getJobsForDate(dateStr).filter(j => j.status !== 'cancelled');
+                const nearestTravel = dayJobs.length > 0
+                    ? Math.min(...dayJobs.map(j => this.estimateTravelMinutes(newPostcode, j.postcode)))
+                    : Infinity;
 
-            const dateStr = d.toISOString().split('T')[0];
-            const slots = this.findAvailableSlots(dateStr, durationMins);
+                if (nearestTravel <= 20) {
+                    const slots = this.findAvailableSlots(dateStr, durationMins, newPostcode);
+                    if (slots.length > 0) {
+                        results.push(slots[0]);
+                        if (results.length >= 3) break;
+                    }
+                }
+            }
+        }
 
-            if (slots.length > 0) {
-                results.push(slots[0]);
-                if (results.length >= 3) break;
+        // Second pass: if we didn't find enough nearby days, add any available day
+        if (results.length < 3) {
+            for (let i = 1; i <= 14; i++) {
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                const dayOfWeek = d.getDay();
+                if (!this.settings.workingDays.includes(dayOfWeek)) continue;
+
+                const dateStr = d.toISOString().split('T')[0];
+                if (results.find(r => r.date === dateStr)) continue; // already added
+
+                const slots = this.findAvailableSlots(dateStr, durationMins, newPostcode);
+                if (slots.length > 0) {
+                    results.push(slots[0]);
+                    if (results.length >= 3) break;
+                }
             }
         }
 
