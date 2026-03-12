@@ -251,6 +251,17 @@
                         <!-- Step 3: When? -->
                         <div class="form-section">
                             <h3><span class="step-num">3</span> When?</h3>
+
+                            <!-- Smart Suggestions (above manual inputs — most common action) -->
+                            <div class="suggestions-box" id="suggestions-box">
+                                <h4>Suggested slots based on location</h4>
+                                <div id="suggestions-list" class="suggestions-list">
+                                    <!-- Filled dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="or-divider"><span>or pick manually</span></div>
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="job-date">Date <span class="required">*</span></label>
@@ -259,14 +270,6 @@
                                 <div class="form-group">
                                     <label for="job-time">Time <span class="required">*</span></label>
                                     <input type="time" id="job-time" required>
-                                </div>
-                            </div>
-
-                            <!-- Smart Suggestions -->
-                            <div class="suggestions-box" id="suggestions-box">
-                                <h4>💡 Smart Suggestions (based on location &amp; schedule)</h4>
-                                <div id="suggestions-list" class="suggestions-list">
-                                    <!-- Filled dynamically -->
                                 </div>
                             </div>
                         </div>
