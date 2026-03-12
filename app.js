@@ -235,7 +235,10 @@ const app = {
         switch (viewName) {
             case 'dashboard': this.renderDashboard(); break;
             case 'calendar': this.renderCalendar(); break;
-            case 'add-job': this.generateSuggestions(); break;
+            case 'add-job':
+                this.generateSuggestions();
+                setTimeout(() => document.getElementById('job-postcode').focus(), 50);
+                break;
             case 'route':
                 document.getElementById('route-date').value = this.todayStr();
                 this.renderRoute(this.todayStr());

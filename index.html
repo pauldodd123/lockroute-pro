@@ -183,41 +183,20 @@
                     <form id="job-form" class="job-form">
                         <input type="hidden" id="job-id" value="">
 
-                        <!-- Customer Details -->
+                        <!-- Step 1: Where? -->
                         <div class="form-section">
-                            <h3>Customer Details</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="customer-name">Customer Name</label>
-                                    <input type="text" id="customer-name" placeholder="e.g. John Smith" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="customer-phone">Phone Number</label>
-                                    <input type="tel" id="customer-phone" placeholder="e.g. 07700 900000">
-                                </div>
+                            <h3><span class="step-num">1</span> Where are they?</h3>
+                            <div class="form-group">
+                                <label for="job-postcode">Postcode <span class="required">*</span></label>
+                                <input type="text" id="job-postcode" placeholder="e.g. SW1A 1AA" required
+                                       class="postcode-input" maxlength="8" autocomplete="off">
+                                <span class="input-hint" id="postcode-hint"></span>
                             </div>
                         </div>
 
-                        <!-- Location -->
+                        <!-- Step 2: What? -->
                         <div class="form-section">
-                            <h3>Location</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="job-postcode">Postcode <span class="required">*</span></label>
-                                    <input type="text" id="job-postcode" placeholder="e.g. SW1A 1AA" required
-                                           class="postcode-input" maxlength="8">
-                                    <span class="input-hint" id="postcode-hint"></span>
-                                </div>
-                                <div class="form-group">
-                                    <label for="job-address">Address</label>
-                                    <input type="text" id="job-address" placeholder="e.g. 10 Downing Street">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Job Details -->
-                        <div class="form-section">
-                            <h3>Job Details</h3>
+                            <h3><span class="step-num">2</span> What do they need?</h3>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="job-type">Job Type <span class="required">*</span></label>
@@ -238,27 +217,40 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="job-duration">Estimated Duration</label>
+                                    <label for="job-duration">Duration</label>
                                     <select id="job-duration">
-                                        <option value="30">30 minutes</option>
-                                        <option value="45">45 minutes</option>
-                                        <option value="60" selected>1 hour</option>
-                                        <option value="90">1.5 hours</option>
-                                        <option value="120">2 hours</option>
-                                        <option value="180">3 hours</option>
-                                        <option value="240">4 hours</option>
+                                        <option value="30">30 min</option>
+                                        <option value="45">45 min</option>
+                                        <option value="60" selected>1 hr</option>
+                                        <option value="90">1.5 hr</option>
+                                        <option value="120">2 hr</option>
+                                        <option value="180">3 hr</option>
+                                        <option value="240">4 hr</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="job-notes">Notes</label>
-                                <textarea id="job-notes" rows="3" placeholder="e.g. Ford Focus 2019, blue, customer will be in car park..."></textarea>
+                                <label for="job-priority">Priority</label>
+                                <div class="priority-selector">
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="normal" checked>
+                                        <span class="priority-badge priority-normal">Normal</span>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="urgent">
+                                        <span class="priority-badge priority-urgent">Urgent</span>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="emergency">
+                                        <span class="priority-badge priority-emergency">Emergency</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Scheduling -->
+                        <!-- Step 3: When? -->
                         <div class="form-section">
-                            <h3>Schedule</h3>
+                            <h3><span class="step-num">3</span> When?</h3>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="job-date">Date <span class="required">*</span></label>
@@ -277,23 +269,30 @@
                                     <!-- Filled dynamically -->
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label for="job-priority">Priority</label>
-                                <div class="priority-selector">
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="normal" checked>
-                                        <span class="priority-badge priority-normal">Normal</span>
-                                    </label>
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="urgent">
-                                        <span class="priority-badge priority-urgent">Urgent</span>
-                                    </label>
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="emergency">
-                                        <span class="priority-badge priority-emergency">Emergency</span>
-                                    </label>
+                        <!-- Step 4: Who? (confirm details) -->
+                        <div class="form-section">
+                            <h3><span class="step-num">4</span> Customer details</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customer-name">Name</label>
+                                    <input type="text" id="customer-name" placeholder="e.g. John Smith">
                                 </div>
+                                <div class="form-group">
+                                    <label for="customer-phone">Phone</label>
+                                    <input type="tel" id="customer-phone" placeholder="e.g. 07700 900000">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="job-address">Address</label>
+                                    <input type="text" id="job-address" placeholder="e.g. 10 Downing Street">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="job-notes">Notes</label>
+                                <textarea id="job-notes" rows="2" placeholder="e.g. Ford Focus 2019, blue, in the car park..."></textarea>
                             </div>
                         </div>
 
