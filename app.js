@@ -94,6 +94,7 @@ const app = {
 
     // ---- Data Persistence ----
     loadData() {
+        // Load from localStorage immediately (fast, offline-ready)
         try {
             const savedJobs = localStorage.getItem('lockroute_jobs');
             if (savedJobs) this.jobs = JSON.parse(savedJobs);
@@ -103,16 +104,71 @@ const app = {
                 this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
             }
         } catch (e) {
-            console.error('Error loading data:', e);
+            console.error('Error loading from localStorage:', e);
         }
+
+        // Then sync from Firestore (async, cloud data takes priority)
+        this.loadFromCloud();
+    },
+
+    async loadFromCloud() {
+        if (typeof cloudDB === 'undefined' || !firebaseReady) return;
+
+        // If we have localStorage data but Firestore is empty, migrate it
+        if (this.jobs.length > 0) {
+            await cloudDB.migrateFromLocalStorage(this.jobs, this.settings);
+        }
+
+        const [cloudJobs, cloudSettings] = await Promise.all([
+            cloudDB.loadJobs(),
+            cloudDB.loadSettings()
+        ]);
+
+        if (cloudJobs !== null && cloudJobs.length > 0) {
+            this.jobs = cloudJobs;
+            localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
+        }
+
+        if (cloudSettings !== null) {
+            this.settings = { ...this.settings, ...cloudSettings };
+            localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
+        }
+
+        // Re-render with cloud data
+        this.updateQuickStats();
+        if (this.currentView === 'dashboard') this.renderDashboard();
+        if (this.currentView === 'calendar') this.renderCalendar();
+        if (this.currentView === 'settings') this.renderSettings();
     },
 
     saveData() {
+        // Always save to localStorage (instant, offline cache)
         try {
             localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
             localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
         } catch (e) {
-            console.error('Error saving data:', e);
+            console.error('Error saving to localStorage:', e);
+        }
+
+        // Also sync to Firestore
+        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+            cloudDB.saveAllJobs(this.jobs);
+            cloudDB.saveSettings(this.settings);
+        }
+    },
+
+    // Targeted save for single job operations (more efficient than full sync)
+    saveJob(job) {
+        localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
+        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+            cloudDB.saveJob(job);
+        }
+    },
+
+    removeJob(id) {
+        localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
+        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+            cloudDB.deleteJob(id);
         }
     },
 
@@ -421,7 +477,7 @@ const app = {
             this.jobs.push(job);
         }
 
-        this.saveData();
+        this.saveJob(job);
         this.resetJobForm();
         this.updateQuickStats();
 
@@ -432,7 +488,7 @@ const app = {
 
     deleteJob(id) {
         this.jobs = this.jobs.filter(j => j.id !== id);
-        this.saveData();
+        this.removeJob(id);
         this.updateQuickStats();
         this.closeModal();
         this.toast('Job deleted', 'info');
@@ -443,7 +499,7 @@ const app = {
         const job = this.jobs.find(j => j.id === id);
         if (job) {
             job.status = 'completed';
-            this.saveData();
+            this.saveJob(job);
             this.closeModal();
             this.toast('Job marked as complete', 'success');
             this.renderDashboard();
