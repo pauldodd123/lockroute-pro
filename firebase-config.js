@@ -12,12 +12,12 @@
 // 6. Deploy and test
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyA-g5uxQ_NJsuP-3RRACIhGhyPbSUnAbXQ",
+    authDomain: "lockpro-4578d.firebaseapp.com",
+    projectId: "lockpro-4578d",
+    storageBucket: "lockpro-4578d.firebasestorage.app",
+    messagingSenderId: "304826338991",
+    appId: "1:304826338991:web:3c688d34c99fa9f3214e5a"
 };
 
 // ---- Initialize Firebase ----
