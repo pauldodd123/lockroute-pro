@@ -32,20 +32,11 @@ function initFirebase() {
         }
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-
-        // Enable offline persistence so app works without internet
-        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            if (err.code === 'failed-precondition') {
-                console.warn('Firestore persistence unavailable (multiple tabs open)');
-            } else if (err.code === 'unimplemented') {
-                console.warn('Firestore persistence not supported in this browser');
-            }
-        });
-
         firebaseReady = true;
         console.log('Firebase connected');
     } catch (e) {
         console.error('Firebase init failed:', e);
+        firebaseReady = false;
     }
 }
 

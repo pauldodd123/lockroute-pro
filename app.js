@@ -114,31 +114,38 @@ const app = {
     async loadFromCloud() {
         if (typeof cloudDB === 'undefined' || !firebaseReady) return;
 
-        // If we have localStorage data but Firestore is empty, migrate it
-        if (this.jobs.length > 0) {
-            await cloudDB.migrateFromLocalStorage(this.jobs, this.settings);
+        try {
+            // Timeout after 5 seconds so app never hangs
+            const timeout = ms => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+
+            // If we have localStorage data but Firestore is empty, migrate it
+            if (this.jobs.length > 0) {
+                await Promise.race([cloudDB.migrateFromLocalStorage(this.jobs, this.settings), timeout(5000)]);
+            }
+
+            const [cloudJobs, cloudSettings] = await Promise.race([
+                Promise.all([cloudDB.loadJobs(), cloudDB.loadSettings()]),
+                timeout(5000)
+            ]);
+
+            if (cloudJobs !== null && cloudJobs.length > 0) {
+                this.jobs = cloudJobs;
+                localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
+            }
+
+            if (cloudSettings !== null) {
+                this.settings = { ...this.settings, ...cloudSettings };
+                localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
+            }
+
+            // Re-render with cloud data
+            this.updateQuickStats();
+            if (this.currentView === 'dashboard') this.renderDashboard();
+            if (this.currentView === 'calendar') this.renderCalendar();
+            if (this.currentView === 'settings') this.renderSettings();
+        } catch (e) {
+            console.warn('Cloud sync skipped:', e.message);
         }
-
-        const [cloudJobs, cloudSettings] = await Promise.all([
-            cloudDB.loadJobs(),
-            cloudDB.loadSettings()
-        ]);
-
-        if (cloudJobs !== null && cloudJobs.length > 0) {
-            this.jobs = cloudJobs;
-            localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
-        }
-
-        if (cloudSettings !== null) {
-            this.settings = { ...this.settings, ...cloudSettings };
-            localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
-        }
-
-        // Re-render with cloud data
-        this.updateQuickStats();
-        if (this.currentView === 'dashboard') this.renderDashboard();
-        if (this.currentView === 'calendar') this.renderCalendar();
-        if (this.currentView === 'settings') this.renderSettings();
     },
 
     saveData() {
