@@ -1469,10 +1469,6 @@ const app = {
         const START_HOUR = 6;
         const SNAP_MINUTES = 15;
 
-        // Use event delegation on document.body so handlers survive re-renders
-        const calContainer = document.querySelector('.calendar-container');
-        if (!calContainer) return;
-
         const onPointerDown = (e) => {
             const grid = document.getElementById('cal-grid');
             if (!grid || !grid.contains(e.target)) return;
