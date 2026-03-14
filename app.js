@@ -604,7 +604,7 @@ const app = {
             vehicleInfo: this._lastVehicleInfo || null,
             date: document.getElementById('job-date').value,
             time: document.getElementById('job-time').value,
-            priority: document.querySelector('input[name="priority"]:checked').value,
+            priority: (document.querySelector('input[name="priority"]')?.value) || 'normal',
             status: 'scheduled',
             createdAt: isEdit ? (this.jobs.find(j => j.id === id)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
             updatedAt: new Date().toISOString(),
