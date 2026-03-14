@@ -1471,15 +1471,27 @@ body {
 .duration-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 10px;
     padding: 10px 14px;
     background: var(--bg);
     border-radius: var(--radius-sm);
 }
-
-.duration-item label {
+.duration-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.job-label-input {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     font-size: 13px;
-    font-weight: 500;
+    font-family: var(--font);
+    min-width: 0;
+}
+.job-label-input:focus {
+    border-color: var(--primary);
+    outline: none;
 }
 
 .duration-item select {
@@ -1488,6 +1500,44 @@ body {
     border-radius: var(--radius-sm);
     font-size: 13px;
     font-family: var(--font);
+    flex-shrink: 0;
+}
+
+.reg-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.reg-input {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: 2px solid #fbbf24;
+    border-radius: var(--radius-sm);
+    background: #fefce8;
+    font-family: var(--font);
+    text-transform: uppercase;
+}
+.reg-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+.vehicle-info {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: #166534;
+    line-height: 1.5;
 }
 
 .date-input {
@@ -1766,20 +1816,108 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .route-map-container {
+        height: 250px;
+        margin-bottom: 14px;
+    }
+
+    .route-day-nav {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .btn-route-nav {
+        padding: 8px 14px;
+        font-size: 13px;
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .route-day-nav .date-input {
+        order: -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    .route-item {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .route-number {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
     /* Calendar */
+    .calendar-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .cal-header-row {
-        grid-template-columns: 40px repeat(7, 1fr);
+        grid-template-columns: 40px repeat(7, minmax(60px, 1fr));
+        min-width: 460px;
     }
 
     .cal-body {
         grid-template-columns: 40px 1fr;
+        min-width: 460px;
+    }
+
+    .cal-grid {
+        grid-template-columns: repeat(7, minmax(60px, 1fr));
+    }
+
+    .cal-day-header {
+        padding: 8px 4px;
+        font-size: 10px;
     }
 
     .cal-day-header .day-num { font-size: 16px; }
 
+    .cal-event {
+        font-size: 10px;
+        padding: 2px 4px;
+        line-height: 1.2;
+    }
+
+    .cal-time-slot {
+        font-size: 10px;
+        padding: 0 4px;
+    }
+
+    /* Reg input */
+    .reg-input-row {
+        flex-wrap: wrap;
+    }
+
+    .reg-input {
+        font-size: 16px;
+        padding: 10px 12px;
+        min-width: 0;
+    }
+
+    /* Vehicle info */
+    .vehicle-info {
+        font-size: 12px;
+    }
+
     /* Settings */
     .duration-settings {
         grid-template-columns: 1fr;
+    }
+
+    .duration-item {
+        flex-wrap: wrap;
+    }
+
+    .job-label-input {
+        width: 100%;
     }
 
     .day-toggles {
@@ -1820,6 +1958,40 @@ body {
         width: 24px;
         height: 24px;
         font-size: 11px;
+    }
+
+    .route-map-container {
+        height: 200px;
+    }
+
+    .btn-route-nav {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .cal-header-row {
+        grid-template-columns: 32px repeat(7, 1fr);
+    }
+
+    .cal-body {
+        grid-template-columns: 32px 1fr;
+    }
+
+    .cal-day-header {
+        padding: 6px 2px;
+        font-size: 9px;
+    }
+
+    .cal-day-header .day-num { font-size: 14px; }
+
+    .reg-input {
+        font-size: 14px;
+        padding: 8px 10px;
+    }
+
+    .suggestion-chip {
+        padding: 8px 12px;
+        font-size: 12px;
     }
 }
 

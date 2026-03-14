@@ -121,6 +121,7 @@ const app = {
         defaultTravel: 20,
         bufferTime: 10,
         jobDurations: {},
+        jobLabels: {},
     },
     currentView: 'dashboard',
     calendarDate: new Date(),
@@ -136,6 +137,25 @@ const app = {
         this.updateQuickStats();
         this.startTimeUpdater();
         this.preGeocodePostcodes();
+        this.populateJobTypeDropdown();
+    },
+
+    populateJobTypeDropdown() {
+        const select = document.getElementById('job-type');
+        const current = select.value;
+        const defaultOpt = select.querySelector('option[value=""]');
+        select.innerHTML = '';
+        if (defaultOpt) select.appendChild(defaultOpt);
+        else select.insertAdjacentHTML('afterbegin', '<option value="">Select job type...</option>');
+
+        for (const [key, type] of Object.entries(JOB_TYPES)) {
+            const label = this.settings.jobLabels[key] || type.label;
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = `${type.icon} ${label}`;
+            select.appendChild(opt);
+        }
+        if (current) select.value = current;
     },
 
     // Pre-geocode all job postcodes + home postcode so cache is warm
@@ -288,6 +308,12 @@ const app = {
                 document.getElementById('job-duration').value = customDuration || type.defaultDuration;
             }
             this.generateSuggestions();
+        });
+
+        // Reg lookup
+        document.getElementById('lookup-reg-btn').addEventListener('click', () => this.lookupVehicleReg());
+        document.getElementById('job-reg').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
         });
 
         // Date change triggers suggestions
@@ -574,6 +600,8 @@ const app = {
             type: document.getElementById('job-type').value,
             duration: parseInt(document.getElementById('job-duration').value),
             notes: document.getElementById('job-notes').value.trim(),
+            vehicleReg: document.getElementById('job-reg').value.trim().toUpperCase(),
+            vehicleInfo: this._lastVehicleInfo || null,
             date: document.getElementById('job-date').value,
             time: document.getElementById('job-time').value,
             priority: document.querySelector('input[name="priority"]:checked').value,
@@ -641,6 +669,16 @@ const app = {
         const priorityRadio = document.querySelector(`input[name="priority"][value="${job.priority}"]`);
         if (priorityRadio) priorityRadio.checked = true;
 
+        document.getElementById('job-reg').value = job.vehicleReg || '';
+        this._lastVehicleInfo = job.vehicleInfo || null;
+        const vInfo = document.getElementById('vehicle-info');
+        if (job.vehicleInfo) {
+            vInfo.innerHTML = this.formatVehicleInfo(job.vehicleInfo);
+            vInfo.style.display = 'block';
+        } else {
+            vInfo.style.display = 'none';
+        }
+
         this.updatePostcodeHint(job.postcode);
     },
 
@@ -650,6 +688,9 @@ const app = {
         document.getElementById('job-form-title').textContent = 'New Job';
         document.getElementById('form-submit-text').textContent = 'Schedule Job';
         document.getElementById('postcode-hint').textContent = '';
+        document.getElementById('job-reg').value = '';
+        document.getElementById('vehicle-info').style.display = 'none';
+        this._lastVehicleInfo = null;
         this.setDefaultDates();
         document.querySelector('input[name="priority"][value="normal"]').checked = true;
     },
@@ -670,6 +711,7 @@ const app = {
     },
 
     getJobLabel(job) {
+        if (this.settings.jobLabels[job.type]) return this.settings.jobLabels[job.type];
         const type = JOB_TYPES[job.type];
         return type ? type.label : 'Other';
     },
@@ -1399,9 +1441,11 @@ const app = {
     },
 
     // ---- Calendar Drag & Drop ----
+    _dragHandlersBound: false,
     initCalendarDragDrop() {
         const grid = document.getElementById('cal-grid');
-        if (!grid) return;
+        if (!grid || this._dragHandlersBound) return;
+        this._dragHandlersBound = true;
 
         let dragJob = null;
         let ghost = null;
@@ -1414,7 +1458,13 @@ const app = {
         const START_HOUR = 6;
         const SNAP_MINUTES = 15;
 
+        // Use event delegation on document.body so handlers survive re-renders
+        const calContainer = document.querySelector('.calendar-container');
+        if (!calContainer) return;
+
         const onPointerDown = (e) => {
+            const grid = document.getElementById('cal-grid');
+            if (!grid || !grid.contains(e.target)) return;
             const eventEl = e.target.closest('.cal-event[data-job-id]');
             if (!eventEl) return;
 
@@ -1464,6 +1514,8 @@ const app = {
             }
 
             // Highlight target column
+            const grid = document.getElementById('cal-grid');
+            if (!grid) return;
             grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
             const colEl = document.elementFromPoint(e.clientX, e.clientY);
             const targetCol = colEl ? colEl.closest('.cal-day-column') : null;
@@ -1480,7 +1532,8 @@ const app = {
                 ghost = null;
             }
 
-            grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
+            const grid = document.getElementById('cal-grid');
+            if (grid) grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
 
             if (isDragging) {
                 // Find target column under cursor
@@ -1532,9 +1585,9 @@ const app = {
             isDragging = false;
         };
 
-        grid.addEventListener('pointerdown', onPointerDown);
-        grid.addEventListener('pointermove', onPointerMove);
-        grid.addEventListener('pointerup', onPointerUp);
+        calContainer.addEventListener('pointerdown', onPointerDown);
+        calContainer.addEventListener('pointermove', onPointerMove);
+        calContainer.addEventListener('pointerup', onPointerUp);
     },
 
     renderDayCalendar() {
@@ -2010,9 +2063,11 @@ const app = {
         const durContainer = document.getElementById('duration-settings');
         durContainer.innerHTML = Object.entries(JOB_TYPES).map(([key, type]) => {
             const currentDuration = s.jobDurations[key] || type.defaultDuration;
+            const currentLabel = s.jobLabels[key] || type.label;
             return `
                 <div class="duration-item">
-                    <label>${type.icon} ${type.label}</label>
+                    <span class="duration-icon">${type.icon}</span>
+                    <input type="text" class="job-label-input" data-job-label="${key}" value="${currentLabel}" placeholder="${type.label}">
                     <select data-job-type="${key}">
                         <option value="15" ${currentDuration === 15 ? 'selected' : ''}>15 min</option>
                         <option value="30" ${currentDuration === 30 ? 'selected' : ''}>30 min</option>
@@ -2044,13 +2099,22 @@ const app = {
             this.settings.workingDays.push(parseInt(cb.dataset.day));
         });
 
-        // Job durations
+        // Job durations and labels
         this.settings.jobDurations = {};
         document.querySelectorAll('#duration-settings select').forEach(sel => {
             this.settings.jobDurations[sel.dataset.jobType] = parseInt(sel.value);
         });
+        this.settings.jobLabels = {};
+        document.querySelectorAll('#duration-settings .job-label-input').forEach(inp => {
+            const key = inp.dataset.jobLabel;
+            const defaultLabel = JOB_TYPES[key]?.label || '';
+            if (inp.value.trim() && inp.value.trim() !== defaultLabel) {
+                this.settings.jobLabels[key] = inp.value.trim();
+            }
+        });
 
         this.saveData();
+        this.populateJobTypeDropdown();
         this.toast('Settings saved!', 'success');
     },
 
@@ -2187,6 +2251,38 @@ const app = {
                 this.renderCalendar();
             }
         }, 60000); // Update every minute
+    },
+
+    // ---- Vehicle Reg Lookup ----
+    lookupVehicleReg() {
+        const reg = document.getElementById('job-reg').value.trim().replace(/\s+/g, '').toUpperCase();
+        if (!reg) {
+            this.toast('Enter a registration number first', 'error');
+            return;
+        }
+
+        // Save the reg info locally
+        this._lastVehicleInfo = { registrationNumber: reg };
+        const vInfo = document.getElementById('vehicle-info');
+        vInfo.innerHTML = `<strong>${reg}</strong> — <a href="https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">Check MOT history ↗</a>`;
+        vInfo.style.display = 'block';
+
+        // Open MOT check in new tab
+        window.open(`https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}`, '_blank');
+        this.toast('Reg saved — opening MOT check', 'success');
+    },
+
+    formatVehicleInfo(info) {
+        if (!info) return '';
+        let html = `<strong>${info.registrationNumber || ''}</strong>`;
+        if (info.make) html += ` — ${info.make}`;
+        if (info.colour) html += ` ${info.colour}`;
+        if (info.yearOfManufacture) html += ` (${info.yearOfManufacture})`;
+        if (info.fuelType) html += ` | ${info.fuelType}`;
+        if (info.motStatus) html += ` | MOT: ${info.motStatus}`;
+        if (info.taxStatus) html += ` | Tax: ${info.taxStatus}`;
+        if (info.note) html += `<br><small>${info.note}</small>`;
+        return html;
     },
 
     // ---- Toast Notifications ----

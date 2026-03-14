@@ -214,18 +214,7 @@
                                     <label for="job-type">Job Type <span class="required">*</span></label>
                                     <select id="job-type" required>
                                         <option value="">Select job type...</option>
-                                        <option value="car-lockout">🚗 Car Lockout</option>
-                                        <option value="car-key-cut">🔑 Car Key Cut & Program</option>
-                                        <option value="car-key-replacement">🔑 Car Key Replacement</option>
-                                        <option value="ignition-repair">🔧 Ignition Repair</option>
-                                        <option value="transponder-key">📡 Transponder Key Programming</option>
-                                        <option value="house-lockout">🏠 House Lockout</option>
-                                        <option value="lock-change">🔒 Lock Change</option>
-                                        <option value="lock-repair">🛠️ Lock Repair</option>
-                                        <option value="security-upgrade">🛡️ Security Upgrade</option>
-                                        <option value="safe-opening">🗄️ Safe Opening</option>
-                                        <option value="commercial">🏢 Commercial</option>
-                                        <option value="other">📝 Other</option>
+                                        <!-- Populated dynamically from JS -->
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -241,22 +230,14 @@
                                     </select>
                                 </div>
                             </div>
+                            <input type="hidden" name="priority" value="normal">
                             <div class="form-group">
-                                <label for="job-priority">Priority</label>
-                                <div class="priority-selector">
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="normal" checked>
-                                        <span class="priority-badge priority-normal">Normal</span>
-                                    </label>
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="urgent">
-                                        <span class="priority-badge priority-urgent">Urgent</span>
-                                    </label>
-                                    <label class="priority-option">
-                                        <input type="radio" name="priority" value="emergency">
-                                        <span class="priority-badge priority-emergency">Emergency</span>
-                                    </label>
+                                <label for="job-reg">Vehicle Reg</label>
+                                <div class="reg-input-row">
+                                    <input type="text" id="job-reg" placeholder="e.g. AB12 CDE" maxlength="8" autocomplete="off" class="reg-input" style="text-transform:uppercase;">
+                                    <button type="button" class="btn btn-outline btn-sm" id="lookup-reg-btn">Look up</button>
                                 </div>
+                                <div id="vehicle-info" class="vehicle-info" style="display:none;"></div>
                             </div>
                         </div>
 
