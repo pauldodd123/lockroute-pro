@@ -2269,12 +2269,17 @@ const app = {
             return;
         }
 
+        // Format reg with space for display (e.g. AB12CDE -> AB12 CDE)
+        const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
+
         this._lastVehicleInfo = { registrationNumber: reg };
         const vInfo = document.getElementById('vehicle-info');
-        vInfo.innerHTML = `<strong>${reg}</strong> — <a href="https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">Check MOT history ↗</a>`;
+        const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
+        const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
+        vInfo.innerHTML = `<strong>${displayReg}</strong> — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a> · <a href="${dvlaUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">DVLA check ↗</a>`;
         vInfo.style.display = 'block';
 
-        window.open(`https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}`, '_blank');
+        window.open(motUrl, '_blank');
         this.toast('Reg saved', 'success');
     },
 
