@@ -1181,6 +1181,40 @@ body {
     font-size: 15px;
 }
 
+.route-day-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.btn-route-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-route-nav:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+}
+.btn-route-nav:active {
+    transform: translateY(0);
+}
+.route-day-nav .date-input {
+    font-weight: 600;
+    text-align: center;
+}
+
 .route-container {
     display: grid;
     grid-template-columns: 1fr 300px;

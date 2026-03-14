@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>LockRoute Pro - Auto Locksmith Scheduling</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -323,9 +326,10 @@
             <section id="view-route" class="view">
                 <div class="view-header">
                     <h1>Route Planner</h1>
-                    <div class="header-actions">
+                    <div class="route-day-nav">
+                        <button class="btn btn-route-nav" id="route-prev-day">◀ Previous Day</button>
                         <input type="date" id="route-date" class="date-input">
-                        <button class="btn btn-primary" id="optimize-route-btn">Optimize Route</button>
+                        <button class="btn btn-route-nav" id="route-next-day">Next Day ▶</button>
                     </div>
                 </div>
 

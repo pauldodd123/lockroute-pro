@@ -314,10 +314,8 @@ const app = {
             this.renderRoute(e.target.value);
         });
 
-        document.getElementById('optimize-route-btn').addEventListener('click', () => {
-            const date = document.getElementById('route-date').value;
-            if (date) this.optimizeRoute(date);
-        });
+        document.getElementById('route-prev-day').addEventListener('click', () => this.changeRouteDay(-1));
+        document.getElementById('route-next-day').addEventListener('click', () => this.changeRouteDay(1));
 
         // Settings save
         document.getElementById('save-settings').addEventListener('click', () => this.saveSettings());
@@ -750,25 +748,37 @@ const app = {
         // If we have a postcode, check if this day has nearby jobs
         const nearbyWarning = this.getNearbyWarning(date, postcode, slots);
 
-        container.innerHTML =
-            (nearbyWarning ? `<span style="font-size:12px;color:#92400e;display:block;margin-bottom:8px;">${nearbyWarning.message}</span>` : '') +
-            slots.map(s => `
-                <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
-                        title="${s.reason || ''}">
-                    ${s.label}${s.tag ? ' ' + s.tag : ''}
-                </button>
-            `).join('') +
-            (nearbyWarning && nearbyWarning.betterDays.length > 0 ? `
-                <span style="font-size:12px;color:#92400e;display:block;margin-top:10px;margin-bottom:6px;">
-                    📍 Or pick a day with nearby jobs:
-                </span>
-                ${nearbyWarning.betterDays.map(s => `
-                    <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
-                            title="${s.reason || ''}" style="border-color:#10b981;color:#065f46;">
-                        ${s.label}${s.tag ? ' ' + s.tag : ''}
-                    </button>
-                `).join('')}
-            ` : '');
+        // Show better location-based days first (if any), then current day slots
+        let html = '';
+
+        if (nearbyWarning && nearbyWarning.betterDays.length > 0) {
+            html += `
+                <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+                    <span style="font-size:13px;font-weight:600;color:#065f46;display:block;margin-bottom:8px;">
+                        📍 Better days — nearby jobs already booked:
+                    </span>
+                    ${nearbyWarning.betterDays.map(s => `
+                        <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                                title="${s.reason || ''}" style="border-color:#10b981;color:#065f46;background:#d1fae5;font-weight:600;">
+                            ${s.label}${s.tag ? ' ' + s.tag : ''}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        if (nearbyWarning) {
+            html += `<span style="font-size:12px;color:#92400e;display:block;margin-bottom:8px;">${nearbyWarning.message}</span>`;
+        }
+
+        html += slots.map(s => `
+            <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                    title="${s.reason || ''}">
+                ${s.label}${s.tag ? ' ' + s.tag : ''}
+            </button>
+        `).join('');
+
+        container.innerHTML = html;
     },
 
     // Check if the selected day has jobs far from the new postcode, and suggest better days
@@ -1582,6 +1592,15 @@ const app = {
     },
 
     // ---- Route Planner ----
+    changeRouteDay(offset) {
+        const dateInput = document.getElementById('route-date');
+        const current = new Date(dateInput.value + 'T00:00:00');
+        current.setDate(current.getDate() + offset);
+        const newDate = current.toISOString().split('T')[0];
+        dateInput.value = newDate;
+        this.renderRoute(newDate);
+    },
+
     renderRoute(dateStr) {
         const container = document.getElementById('route-list');
         const jobs = this.getJobsForDate(dateStr);
@@ -1704,7 +1723,7 @@ const app = {
 
         const map = new mapboxgl.Map({
             container: 'route-map',
-            style: 'mapbox://styles/mapbox/light-v11',
+            style: 'mapbox://styles/mapbox/streets-v12',
             center: [-0.12, 51.51],
             zoom: 10
         });
