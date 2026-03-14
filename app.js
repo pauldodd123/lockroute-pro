@@ -2262,51 +2262,20 @@ const app = {
     },
 
     // ---- Vehicle Reg Lookup ----
-    async lookupVehicleReg() {
+    lookupVehicleReg() {
         const reg = document.getElementById('job-reg').value.trim().replace(/\s+/g, '').toUpperCase();
         if (!reg) {
             this.toast('Enter a registration number first', 'error');
             return;
         }
 
+        this._lastVehicleInfo = { registrationNumber: reg };
         const vInfo = document.getElementById('vehicle-info');
-        const btn = document.getElementById('lookup-reg-btn');
-        btn.disabled = true;
-        btn.textContent = 'Looking up...';
-        vInfo.innerHTML = '<em>Searching DVLA...</em>';
+        vInfo.innerHTML = `<strong>${reg}</strong> — <a href="https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">Check MOT history ↗</a>`;
         vInfo.style.display = 'block';
 
-        try {
-            const SB_URL = 'https://sdzvbwgebpszxfaihbht.supabase.co/functions/v1/vehicle-lookup';
-            const SB_ANON = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
-                '.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkenZid2dlYnBzenhmYWloYmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MDg1MTIsImV4cCI6MjA4OTA4NDUxMn0',
-                '.5slXNDbhW9TPKZmo49aZzTuNbzzY5tWZvDpSg7_6G_8'].join('');
-            const response = await fetch(SB_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SB_ANON}`,
-                },
-                body: JSON.stringify({ registration: reg }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Lookup failed');
-            }
-
-            this._lastVehicleInfo = data;
-            vInfo.innerHTML = this.formatVehicleInfo(data);
-            this.toast('Vehicle details found', 'success');
-        } catch (err) {
-            this._lastVehicleInfo = { registrationNumber: reg };
-            vInfo.innerHTML = `<strong>${reg}</strong> — <span style="color:#dc2626;">${err.message}</span>`;
-            this.toast(err.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Look Up';
-        }
+        window.open(`https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}`, '_blank');
+        this.toast('Reg saved', 'success');
     },
 
     formatVehicleInfo(info) {
