@@ -769,6 +769,14 @@ body {
     border: 1px dashed var(--border);
 }
 
+.cal-event.time-block {
+    border: 2px dashed rgba(255,255,255,0.4);
+    cursor: pointer;
+}
+.cal-event.time-block:hover {
+    opacity: 0.9 !important;
+}
+
 .cal-current-time {
     position: absolute;
     left: 0;

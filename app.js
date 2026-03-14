@@ -65,6 +65,7 @@ const POSTCODE_AREAS = {
 // ---- Application State ----
 const app = {
     jobs: [],
+    timeBlocks: [],
     settings: {
         workStart: '08:00',
         workEnd: '18:00',
@@ -98,6 +99,9 @@ const app = {
         try {
             const savedJobs = localStorage.getItem('lockroute_jobs');
             if (savedJobs) this.jobs = JSON.parse(savedJobs);
+
+            const savedBlocks = localStorage.getItem('lockroute_blocks');
+            if (savedBlocks) this.timeBlocks = JSON.parse(savedBlocks);
 
             const savedSettings = localStorage.getItem('lockroute_settings');
             if (savedSettings) {
@@ -152,6 +156,7 @@ const app = {
         // Always save to localStorage (instant, offline cache)
         try {
             localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
+            localStorage.setItem('lockroute_blocks', JSON.stringify(this.timeBlocks));
             localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
         } catch (e) {
             console.error('Error saving to localStorage:', e);
@@ -264,6 +269,23 @@ const app = {
 
         // Clear all data
         document.getElementById('clear-all-data').addEventListener('click', () => this.clearAllJobs());
+
+        // Block time
+        document.getElementById('add-block-btn').addEventListener('click', () => this.openBlockModal());
+        document.getElementById('block-save').addEventListener('click', () => this.saveTimeBlock());
+        document.getElementById('block-delete').addEventListener('click', () => this.deleteTimeBlock());
+
+        // Color picker selection highlight
+        document.querySelectorAll('#block-color-picker input').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('#block-color-picker .color-dot').forEach(dot => {
+                    dot.style.borderColor = 'transparent';
+                });
+                if (radio.checked) {
+                    radio.nextElementSibling.style.borderColor = '#fff';
+                }
+            });
+        });
 
         // Lunch toggle
         document.getElementById('lunch-enabled').addEventListener('change', (e) => {
@@ -748,6 +770,14 @@ const app = {
             blocked.push({ start: lunchStart - durationMins, end: lunchStart + this.settings.lunchDuration, jobPostcode: null, jobTime: lunchStart, jobEnd: lunchStart + this.settings.lunchDuration });
         }
 
+        // Add time blocks
+        const blocks = this.getBlocksForDate(dateStr);
+        for (const block of blocks) {
+            const bStart = this.timeToMinutes(block.startTime);
+            const bEnd = this.timeToMinutes(block.endTime);
+            blocked.push({ start: bStart - durationMins, end: bEnd, jobPostcode: null, jobTime: bStart, jobEnd: bEnd });
+        }
+
         // Sort blocked periods
         blocked.sort((a, b) => a.start - b.start);
 
@@ -919,10 +949,29 @@ const app = {
         // Insert lunch break in the right position
         const lunchStart = this.settings.lunchEnabled ? this.timeToMinutes(this.settings.lunchStart) : null;
 
+        // Gather time blocks for today
+        const blocks = this.getBlocksForDate(dateStr);
+        const blocksSorted = blocks.slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
+        const insertedBlocks = new Set();
+
         let lunchInserted = false;
 
         for (const job of jobs) {
             const jobMins = this.timeToMinutes(job.time);
+
+            // Insert blocks before this job
+            for (const block of blocksSorted) {
+                if (insertedBlocks.has(block.id)) continue;
+                const bStart = this.timeToMinutes(block.startTime);
+                if (bStart <= jobMins) {
+                    html += `
+                        <div class="timeline-lunch" style="border-left-color:${block.color};" onclick="app.openBlockModal('${block.id}')">
+                            🚫 ${block.label} (${this.formatTime(block.startTime)} - ${this.formatTime(block.endTime)})
+                        </div>
+                    `;
+                    insertedBlocks.add(block.id);
+                }
+            }
 
             // Insert lunch before this job if appropriate
             if (this.settings.lunchEnabled && !lunchInserted && lunchStart !== null && jobMins >= lunchStart) {
@@ -964,6 +1013,16 @@ const app = {
             html += `
                 <div class="timeline-lunch">
                     🍴 Lunch Break (${this.formatTime(this.settings.lunchStart)} - ${this.formatTime(this.minutesToTime(lunchStart + this.settings.lunchDuration))})
+                </div>
+            `;
+        }
+
+        // Insert remaining blocks
+        for (const block of blocksSorted) {
+            if (insertedBlocks.has(block.id)) continue;
+            html += `
+                <div class="timeline-lunch" style="border-left-color:${block.color};" onclick="app.openBlockModal('${block.id}')">
+                    🚫 ${block.label} (${this.formatTime(block.startTime)} - ${this.formatTime(block.endTime)})
                 </div>
             `;
         }
@@ -1163,6 +1222,22 @@ const app = {
                 }
             }
 
+            // Time blocks
+            const blocks = this.getBlocksForDate(dateStr);
+            for (const block of blocks) {
+                const bStart = this.timeToMinutes(block.startTime);
+                const bEnd = this.timeToMinutes(block.endTime);
+                const topPx = ((bStart / 60) - startHour) * slotHeight;
+                const heightPx = ((bEnd - bStart) / 60) * slotHeight;
+                columnHtml += `
+                    <div class="cal-event time-block" style="top:${topPx}px;height:${Math.max(heightPx, 20)}px;background:${block.color};opacity:0.7;"
+                         onclick="app.openBlockModal('${block.id}')">
+                        <div class="cal-event-title">🚫 ${block.label}</div>
+                        <div class="cal-event-time">${this.formatTime(block.startTime)} - ${this.formatTime(block.endTime)}</div>
+                    </div>
+                `;
+            }
+
             // Current time line (if today)
             if (dateStr === today) {
                 const now = new Date();
@@ -1196,6 +1271,7 @@ const app = {
 
         const container = document.getElementById('day-schedule');
         const jobs = this.getJobsForDate(dateStr);
+        const blocks = this.getBlocksForDate(dateStr);
         const workStart = this.timeToMinutes(this.settings.workStart);
         const workEnd = this.timeToMinutes(this.settings.workEnd);
 
@@ -1208,8 +1284,14 @@ const app = {
                 const jStart = this.timeToMinutes(j.time);
                 return mins >= jStart && mins < jStart + j.duration;
             });
+            const matchingBlock = blocks.find(b => {
+                const bStart = this.timeToMinutes(b.startTime);
+                const bEnd = this.timeToMinutes(b.endTime);
+                return mins >= bStart && mins < bEnd;
+            });
 
             const isJobStart = matchingJob && this.timeToMinutes(matchingJob.time) === mins;
+            const isBlockStart = matchingBlock && this.timeToMinutes(matchingBlock.startTime) === mins;
             const isLunch = this.settings.lunchEnabled &&
                             mins >= this.timeToMinutes(this.settings.lunchStart) &&
                             mins < this.timeToMinutes(this.settings.lunchStart) + this.settings.lunchDuration;
@@ -1225,6 +1307,15 @@ const app = {
                          onclick="app.showJobModal('${matchingJob.id}')">
                         <h4>${this.getJobIcon(matchingJob)} ${this.getJobLabel(matchingJob)}</h4>
                         <p>${matchingJob.customerName || ''} - ${matchingJob.postcode} - ${matchingJob.duration} min</p>
+                    </div>
+                `;
+            } else if (isBlockStart && matchingBlock) {
+                const bDuration = this.timeToMinutes(matchingBlock.endTime) - this.timeToMinutes(matchingBlock.startTime);
+                html += `
+                    <div class="day-slot-job" style="background:${matchingBlock.color};opacity:0.7;cursor:pointer;"
+                         onclick="app.openBlockModal('${matchingBlock.id}')">
+                        <h4>🚫 ${matchingBlock.label}</h4>
+                        <p>${this.formatTime(matchingBlock.startTime)} - ${this.formatTime(matchingBlock.endTime)} (${bDuration} min)</p>
                     </div>
                 `;
             } else if (isLunchStart) {
@@ -1420,8 +1511,19 @@ const app = {
                 if (cursor >= lunchStart && cursor < lunchEnd) {
                     cursor = lunchEnd;
                 } else if (cursor + job.duration > lunchStart && cursor < lunchStart) {
-                    // Job would overlap lunch, move after lunch
                     cursor = lunchEnd;
+                }
+            }
+
+            // Skip time blocks
+            const blocks = this.getBlocksForDate(dateStr);
+            for (const block of blocks) {
+                const bStart = this.timeToMinutes(block.startTime);
+                const bEnd = this.timeToMinutes(block.endTime);
+                if (cursor >= bStart && cursor < bEnd) {
+                    cursor = bEnd;
+                } else if (cursor + job.duration > bStart && cursor < bStart) {
+                    cursor = bEnd;
                 }
             }
 
@@ -1579,11 +1681,104 @@ const app = {
 
         // Clear local
         this.jobs = [];
+        this.timeBlocks = [];
         localStorage.removeItem('lockroute_jobs');
+        localStorage.removeItem('lockroute_blocks');
         this.saveData();
         this.updateQuickStats();
         this.renderDashboard();
         this.toast('All jobs deleted', 'info');
+    },
+
+    // ---- Time Blocks ----
+    openBlockModal(blockId) {
+        const modal = document.getElementById('block-modal');
+        const isEdit = !!blockId;
+        const block = isEdit ? this.timeBlocks.find(b => b.id === blockId) : null;
+
+        document.getElementById('block-modal-title').textContent = isEdit ? 'Edit Block' : 'Block Time';
+        document.getElementById('block-id').value = isEdit ? block.id : '';
+        document.getElementById('block-label').value = isEdit ? block.label : '';
+        document.getElementById('block-date').value = isEdit ? block.date : this.calendarDate.toISOString().split('T')[0];
+        document.getElementById('block-start').value = isEdit ? block.startTime : '09:00';
+        document.getElementById('block-end').value = isEdit ? block.endTime : '10:00';
+        document.getElementById('block-repeat').value = isEdit ? (block.repeat || 'none') : 'none';
+
+        // Set color
+        const color = isEdit ? block.color : '#6b7280';
+        document.querySelectorAll('#block-color-picker input').forEach(radio => {
+            radio.checked = radio.value === color;
+            radio.nextElementSibling.style.borderColor = radio.value === color ? '#fff' : 'transparent';
+        });
+
+        document.getElementById('block-delete').style.display = isEdit ? '' : 'none';
+        modal.classList.add('active');
+    },
+
+    closeBlockModal() {
+        document.getElementById('block-modal').classList.remove('active');
+    },
+
+    saveTimeBlock() {
+        const id = document.getElementById('block-id').value || 'block_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const isEdit = !!document.getElementById('block-id').value;
+
+        const block = {
+            id,
+            label: document.getElementById('block-label').value.trim() || 'Blocked',
+            date: document.getElementById('block-date').value,
+            startTime: document.getElementById('block-start').value,
+            endTime: document.getElementById('block-end').value,
+            repeat: document.getElementById('block-repeat').value,
+            color: document.querySelector('#block-color-picker input:checked').value,
+        };
+
+        if (block.startTime >= block.endTime) {
+            this.toast('End time must be after start time', 'error');
+            return;
+        }
+
+        if (isEdit) {
+            const idx = this.timeBlocks.findIndex(b => b.id === id);
+            if (idx !== -1) this.timeBlocks[idx] = block;
+        } else {
+            this.timeBlocks.push(block);
+        }
+
+        this.saveData();
+        this.closeBlockModal();
+        this.renderCalendar();
+        this.toast(`Time block ${isEdit ? 'updated' : 'added'}`, 'success');
+    },
+
+    deleteTimeBlock() {
+        const id = document.getElementById('block-id').value;
+        if (!id) return;
+        this.timeBlocks = this.timeBlocks.filter(b => b.id !== id);
+        this.saveData();
+        this.closeBlockModal();
+        this.renderCalendar();
+        this.toast('Time block removed', 'info');
+    },
+
+    getBlocksForDate(dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayOfWeek = d.getDay();
+
+        return this.timeBlocks.filter(block => {
+            // Exact date match
+            if (block.date === dateStr) return true;
+
+            // Repeating blocks
+            if (block.repeat === 'daily') return true;
+            if (block.repeat === 'weekdays' && dayOfWeek >= 1 && dayOfWeek <= 5) return true;
+            if (block.repeat === 'weekly') {
+                const blockDate = new Date(block.date + 'T00:00:00');
+                return blockDate.getDay() === dayOfWeek;
+            }
+
+            return false;
+        });
     },
 
     // ---- Quick Stats ----
