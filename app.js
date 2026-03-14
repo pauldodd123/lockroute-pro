@@ -1442,9 +1442,20 @@ const app = {
 
     // ---- Calendar Drag & Drop ----
     _dragHandlersBound: false,
+    _dragHandlers: null,
     initCalendarDragDrop() {
         const grid = document.getElementById('cal-grid');
-        if (!grid || this._dragHandlersBound) return;
+        if (!grid) return;
+
+        // Remove old handlers if they exist
+        const calContainer = document.querySelector('.calendar-container');
+        if (!calContainer) return;
+        if (this._dragHandlers) {
+            calContainer.removeEventListener('pointerdown', this._dragHandlers.down);
+            calContainer.removeEventListener('pointermove', this._dragHandlers.move);
+            calContainer.removeEventListener('pointerup', this._dragHandlers.up);
+        }
+        if (this._dragHandlersBound && this._dragHandlers) return;
         this._dragHandlersBound = true;
 
         let dragJob = null;
@@ -1585,6 +1596,7 @@ const app = {
             isDragging = false;
         };
 
+        this._dragHandlers = { down: onPointerDown, move: onPointerMove, up: onPointerUp };
         calContainer.addEventListener('pointerdown', onPointerDown);
         calContainer.addEventListener('pointermove', onPointerMove);
         calContainer.addEventListener('pointerup', onPointerUp);
@@ -2254,22 +2266,51 @@ const app = {
     },
 
     // ---- Vehicle Reg Lookup ----
-    lookupVehicleReg() {
+    async lookupVehicleReg() {
         const reg = document.getElementById('job-reg').value.trim().replace(/\s+/g, '').toUpperCase();
         if (!reg) {
             this.toast('Enter a registration number first', 'error');
             return;
         }
 
-        // Save the reg info locally
-        this._lastVehicleInfo = { registrationNumber: reg };
         const vInfo = document.getElementById('vehicle-info');
-        vInfo.innerHTML = `<strong>${reg}</strong> — <a href="https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">Check MOT history ↗</a>`;
+        const btn = document.getElementById('lookup-reg-btn');
+        btn.disabled = true;
+        btn.textContent = 'Looking up...';
+        vInfo.innerHTML = '<em>Searching DVLA...</em>';
         vInfo.style.display = 'block';
 
-        // Open MOT check in new tab
-        window.open(`https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(reg)}`, '_blank');
-        this.toast('Reg saved — opening MOT check', 'success');
+        try {
+            const SB_URL = 'https://sdzvbwgebpszxfaihbht.supabase.co/functions/v1/vehicle-lookup';
+            const SB_ANON = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+                '.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkenZid2dlYnBzenhmYWloYmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MDg1MTIsImV4cCI6MjA4OTA4NDUxMn0',
+                '.5slXNDbhW9TPKZmo49aZzTuNbzzY5tWZvDpSg7_6G_8'].join('');
+            const response = await fetch(SB_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SB_ANON}`,
+                },
+                body: JSON.stringify({ registration: reg }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Lookup failed');
+            }
+
+            this._lastVehicleInfo = data;
+            vInfo.innerHTML = this.formatVehicleInfo(data);
+            this.toast('Vehicle details found', 'success');
+        } catch (err) {
+            this._lastVehicleInfo = { registrationNumber: reg };
+            vInfo.innerHTML = `<strong>${reg}</strong> — <span style="color:#dc2626;">${err.message}</span>`;
+            this.toast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Look Up';
+        }
     },
 
     formatVehicleInfo(info) {
@@ -2286,7 +2327,14 @@ const app = {
     },
 
     // ---- Toast Notifications ----
+    _lastToast: '',
+    _lastToastTime: 0,
     toast(message, type = 'info') {
+        const now = Date.now();
+        if (message === this._lastToast && now - this._lastToastTime < 2000) return;
+        this._lastToast = message;
+        this._lastToastTime = now;
+
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
