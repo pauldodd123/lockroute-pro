@@ -121,6 +121,8 @@ const app = {
         homePostcode: '',
         defaultTravel: 20,
         bufferTime: 10,
+        vatRegistered: false,
+        vatRate: 20,
         jobDurations: {},
         jobLabels: {},
     },
@@ -320,6 +322,12 @@ const app = {
             e.target.value = e.target.value.toUpperCase();
         });
 
+        // Price / VAT
+        document.getElementById('job-price').addEventListener('input', () => this.updateVatBreakdown());
+        document.getElementById('vat-registered').addEventListener('change', (e) => {
+            document.getElementById('vat-settings').style.display = e.target.checked ? 'block' : 'none';
+        });
+
         // Jotter
         document.getElementById('jotter-add-btn').addEventListener('click', () => this.addJotterNote());
         document.getElementById('jotter-input').addEventListener('keydown', (e) => {
@@ -414,6 +422,8 @@ const app = {
             case 'calendar': this.renderCalendar(); break;
             case 'add-job':
                 this.generateSuggestions();
+                document.querySelector('label[for="job-price"]').textContent = this.settings.vatRegistered ? 'Price (Net)' : 'Price Quoted';
+                this.updateVatBreakdown();
                 setTimeout(() => document.getElementById('job-postcode').focus(), 50);
                 break;
             case 'route':
@@ -614,6 +624,8 @@ const app = {
             vehicleReg: document.getElementById('job-reg').value.trim().toUpperCase(),
             vehicleInfo: this._lastVehicleInfo || null,
             priceQuoted: parseFloat(document.getElementById('job-price').value) || 0,
+            vatApplied: this.settings.vatRegistered,
+            vatRate: this.settings.vatRegistered ? this.settings.vatRate : 0,
             date: document.getElementById('job-date').value,
             time: document.getElementById('job-time').value,
             priority: (document.querySelector('input[name="priority"]')?.value) || 'normal',
@@ -1313,16 +1325,33 @@ const app = {
         const today = this.todayStr();
         const weekDates = this.getWeekDates(new Date());
 
-        const weekEarnings = this.jobs
-            .filter(j => weekDates.includes(j.date) && j.status !== 'cancelled')
-            .reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+        const weekJobs = this.jobs.filter(j => weekDates.includes(j.date) && j.status !== 'cancelled');
+        const weekNet = weekJobs.reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+        const weekVat = weekJobs.reduce((sum, j) => {
+            if (j.vatApplied && j.vatRate) return sum + (parseFloat(j.priceQuoted) || 0) * (j.vatRate / 100);
+            return sum;
+        }, 0);
+        const weekTotal = weekNet + weekVat;
 
-        const upcomingEarnings = this.jobs
-            .filter(j => j.date >= today && j.status === 'scheduled')
-            .reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+        const upcomingJobs = this.jobs.filter(j => j.date >= today && j.status === 'scheduled');
+        const upcomingNet = upcomingJobs.reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+        const upcomingVat = upcomingJobs.reduce((sum, j) => {
+            if (j.vatApplied && j.vatRate) return sum + (parseFloat(j.priceQuoted) || 0) * (j.vatRate / 100);
+            return sum;
+        }, 0);
+        const upcomingTotal = upcomingNet + upcomingVat;
 
-        document.getElementById('stat-earnings-week').textContent = weekEarnings > 0 ? `£${weekEarnings.toFixed(0)}` : '£0';
-        document.getElementById('stat-earnings-upcoming').textContent = upcomingEarnings > 0 ? `£${upcomingEarnings.toFixed(0)}` : '£0';
+        document.getElementById('stat-earnings-week').textContent = weekTotal > 0 ? `£${weekTotal.toFixed(0)}` : '£0';
+        document.getElementById('stat-earnings-upcoming').textContent = upcomingTotal > 0 ? `£${upcomingTotal.toFixed(0)}` : '£0';
+
+        const vatBreakdown = document.getElementById('vat-earnings-breakdown');
+        if (this.settings.vatRegistered && (weekVat > 0 || upcomingVat > 0)) {
+            vatBreakdown.style.display = 'block';
+            document.getElementById('stat-earnings-net').textContent = `£${weekNet.toFixed(0)}`;
+            document.getElementById('stat-earnings-vat').textContent = `£${weekVat.toFixed(0)}`;
+        } else {
+            vatBreakdown.style.display = 'none';
+        }
     },
 
     // ---- Calendar ----
@@ -2063,10 +2092,29 @@ const app = {
                 <span class="modal-detail-label">Vehicle Reg</span>
                 <span class="modal-detail-value">${job.vehicleReg}</span>
             </div>` : ''}
-            ${job.priceQuoted ? `<div class="modal-detail-row">
-                <span class="modal-detail-label">Price Quoted</span>
-                <span class="modal-detail-value"><strong>£${parseFloat(job.priceQuoted).toFixed(2)}</strong></span>
-            </div>` : ''}
+            ${job.priceQuoted ? (() => {
+                const net = parseFloat(job.priceQuoted);
+                if (job.vatApplied && job.vatRate) {
+                    const vat = net * (job.vatRate / 100);
+                    const total = net + vat;
+                    return `<div class="modal-detail-row">
+                        <span class="modal-detail-label">Net Price</span>
+                        <span class="modal-detail-value">£${net.toFixed(2)}</span>
+                    </div>
+                    <div class="modal-detail-row">
+                        <span class="modal-detail-label">VAT (${job.vatRate}%)</span>
+                        <span class="modal-detail-value">£${vat.toFixed(2)}</span>
+                    </div>
+                    <div class="modal-detail-row">
+                        <span class="modal-detail-label">Total</span>
+                        <span class="modal-detail-value"><strong>£${total.toFixed(2)}</strong></span>
+                    </div>`;
+                }
+                return `<div class="modal-detail-row">
+                    <span class="modal-detail-label">Price Quoted</span>
+                    <span class="modal-detail-value"><strong>£${net.toFixed(2)}</strong></span>
+                </div>`;
+            })() : ''}
             ${job.notes ? `<div class="modal-notes"><strong>Notes:</strong> ${job.notes}</div>` : ''}
         `;
 
@@ -2100,6 +2148,9 @@ const app = {
         document.getElementById('home-postcode').value = s.homePostcode;
         document.getElementById('default-travel').value = s.defaultTravel;
         document.getElementById('buffer-time').value = s.bufferTime;
+        document.getElementById('vat-registered').checked = s.vatRegistered;
+        document.getElementById('vat-rate').value = s.vatRate;
+        document.getElementById('vat-settings').style.display = s.vatRegistered ? 'block' : 'none';
 
         // Working days
         document.querySelectorAll('#working-days input').forEach(cb => {
@@ -2139,6 +2190,8 @@ const app = {
         this.settings.homePostcode = document.getElementById('home-postcode').value.trim().toUpperCase();
         this.settings.defaultTravel = parseInt(document.getElementById('default-travel').value);
         this.settings.bufferTime = parseInt(document.getElementById('buffer-time').value);
+        this.settings.vatRegistered = document.getElementById('vat-registered').checked;
+        this.settings.vatRate = parseFloat(document.getElementById('vat-rate').value) || 20;
 
         // Working days
         this.settings.workingDays = [];
@@ -2279,6 +2332,25 @@ const app = {
 
             return false;
         });
+    },
+
+    // ---- VAT ----
+    updateVatBreakdown() {
+        const breakdown = document.getElementById('vat-breakdown');
+        if (!this.settings.vatRegistered) {
+            breakdown.style.display = 'none';
+            return;
+        }
+        const netPrice = parseFloat(document.getElementById('job-price').value) || 0;
+        if (netPrice <= 0) {
+            breakdown.style.display = 'none';
+            return;
+        }
+        const vatAmount = netPrice * (this.settings.vatRate / 100);
+        const total = netPrice + vatAmount;
+        document.getElementById('vat-breakdown-text').textContent =
+            `+ VAT £${vatAmount.toFixed(2)} = £${total.toFixed(2)} total`;
+        breakdown.style.display = 'block';
     },
 
     // ---- Quick Stats ----

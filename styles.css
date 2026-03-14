@@ -1562,6 +1562,28 @@ body {
     font-weight: 600;
 }
 
+/* ---- VAT Breakdown ---- */
+.vat-breakdown {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 500;
+}
+.vat-earnings-breakdown {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+}
+.vat-earnings-row {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
 /* ---- Earnings Card ---- */
 .earnings-card {
     grid-column: 1 / -1;
