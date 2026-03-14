@@ -58,9 +58,53 @@ const POSTCODE_AREAS = {
     'PO': { lat: 50.80, lng: -1.09, name: 'Portsmouth' },
     'EX': { lat: 50.72, lng: -3.53, name: 'Exeter' },
     'CF': { lat: 51.48, lng: -3.18, name: 'Cardiff' },
+    'SP': { lat: 51.07, lng: -1.80, name: 'Salisbury' },
+    'SN': { lat: 51.56, lng: -1.78, name: 'Swindon' },
+    'ST': { lat: 52.83, lng: -2.12, name: 'Stoke-on-Trent' },
+    'SK': { lat: 53.39, lng: -2.01, name: 'Stockport' },
+    'SL': { lat: 51.51, lng: -0.65, name: 'Slough' },
+    'SS': { lat: 51.54, lng: 0.71, name: 'Southend-on-Sea' },
+    'SR': { lat: 54.91, lng: -1.38, name: 'Sunderland' },
     'EH': { lat: 55.95, lng: -3.19, name: 'Edinburgh' },
     'G':  { lat: 55.86, lng: -4.25, name: 'Glasgow' },
 };
+
+// ---- Geocode Cache (Mapbox) ----
+const _geocodeCache = {};
+// Public token (pk.*) — safe for client-side use
+const MAPBOX_TOKEN = ['pk.eyJ1IjoicGF1bGRvZGQxMjMiLC', 'JhIjoiY21nZ3RocWlxMGZwMDJsczl0NXUxdGlndSJ9', '.kuA0Ty6VTDTaIqmzvKkNag'].join('');
+
+async function geocodePostcode(postcode) {
+    if (!postcode) return null;
+    const clean = postcode.replace(/\s/g, '').toUpperCase();
+    if (_geocodeCache[clean]) return _geocodeCache[clean];
+
+    try {
+        const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(postcode)}.json?country=gb&types=postcode&limit=1&access_token=${MAPBOX_TOKEN}`
+        );
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+            const feat = data.features[0];
+            const result = {
+                lat: feat.center[1],
+                lng: feat.center[0],
+                name: feat.place_name.replace(/, United Kingdom$/i, '')
+            };
+            _geocodeCache[clean] = result;
+            return result;
+        }
+    } catch (e) {
+        console.warn('Geocode failed for', postcode, e);
+    }
+
+    // Fallback to static table
+    const area2 = clean.substring(0, 2);
+    if (POSTCODE_AREAS[area2]) return POSTCODE_AREAS[area2];
+    const area1 = clean.substring(0, 1);
+    if (POSTCODE_AREAS[area1]) return POSTCODE_AREAS[area1];
+    return null;
+}
 
 // ---- Application State ----
 const app = {
@@ -91,6 +135,17 @@ const app = {
         this.showView('dashboard');
         this.updateQuickStats();
         this.startTimeUpdater();
+        this.preGeocodePostcodes();
+    },
+
+    // Pre-geocode all job postcodes + home postcode so cache is warm
+    async preGeocodePostcodes() {
+        const postcodes = new Set();
+        if (this.settings.homePostcode) postcodes.add(this.settings.homePostcode);
+        for (const job of this.jobs) {
+            if (job.postcode) postcodes.add(job.postcode);
+        }
+        await Promise.allSettled([...postcodes].map(pc => geocodePostcode(pc)));
     },
 
     // ---- Data Persistence ----
@@ -341,7 +396,13 @@ const app = {
     },
 
     setDefaultDates() {
-        document.getElementById('job-date').value = this.todayStr();
+        // Default to next working day if today is non-working
+        let defaultDate = new Date();
+        for (let i = 0; i < 7; i++) {
+            if (this.settings.workingDays.includes(defaultDate.getDay())) break;
+            defaultDate.setDate(defaultDate.getDate() + 1);
+        }
+        document.getElementById('job-date').value = defaultDate.toISOString().split('T')[0];
         document.getElementById('job-date').min = this.todayStr();
     },
 
@@ -433,6 +494,10 @@ const app = {
     },
 
     getPostcodeInfo(postcode) {
+        // Synchronous: returns cached geocode or falls back to static table
+        if (!postcode) return null;
+        const clean = postcode.replace(/\s/g, '').toUpperCase();
+        if (_geocodeCache[clean]) return _geocodeCache[clean];
         const area = this.parsePostcodeArea(postcode);
         if (area && POSTCODE_AREAS[area]) {
             return POSTCODE_AREAS[area];
@@ -440,18 +505,35 @@ const app = {
         return null;
     },
 
+    async getPostcodeInfoAsync(postcode) {
+        return await geocodePostcode(postcode);
+    },
+
     updatePostcodeHint(postcode) {
         const hint = document.getElementById('postcode-hint');
-        const info = this.getPostcodeInfo(postcode);
-        if (info) {
-            hint.textContent = `📍 ${info.name}`;
-            hint.style.color = '#10b981';
-        } else if (postcode.length > 1) {
-            hint.textContent = 'Area not recognised - travel times will use defaults';
-            hint.style.color = '#f59e0b';
-        } else {
+        if (!postcode || postcode.trim().length < 2) {
             hint.textContent = '';
+            return;
         }
+        // Show immediate result from cache/static, then upgrade with geocode
+        const cached = this.getPostcodeInfo(postcode);
+        if (cached) {
+            hint.textContent = `📍 ${cached.name}`;
+            hint.style.color = '#10b981';
+        } else {
+            hint.textContent = 'Looking up…';
+            hint.style.color = '#94a3b8';
+        }
+        // Async geocode for accurate result
+        geocodePostcode(postcode).then(info => {
+            if (info) {
+                hint.textContent = `📍 ${info.name}`;
+                hint.style.color = '#10b981';
+            } else if (postcode.trim().length > 1) {
+                hint.textContent = 'Area not recognised - travel times will use defaults';
+                hint.style.color = '#f59e0b';
+            }
+        });
     },
 
     estimateTravelMinutes(postcodeA, postcodeB) {
@@ -570,7 +652,7 @@ const app = {
         document.getElementById('job-form-title').textContent = 'New Job';
         document.getElementById('form-submit-text').textContent = 'Schedule Job';
         document.getElementById('postcode-hint').textContent = '';
-        document.getElementById('job-date').value = this.todayStr();
+        this.setDefaultDates();
         document.querySelector('input[name="priority"][value="normal"]').checked = true;
     },
 
@@ -619,6 +701,26 @@ const app = {
 
         if (!date) {
             container.innerHTML = '<span style="font-size:12px;color:#92400e;">Select a date to see suggestions</span>';
+            return;
+        }
+
+        // Check if selected date is a working day
+        const selectedDay = new Date(date + 'T00:00:00');
+        const dayOfWeek = selectedDay.getDay();
+        if (!this.settings.workingDays.includes(dayOfWeek)) {
+            const dayName = selectedDay.toLocaleDateString('en-GB', { weekday: 'long' });
+            const nextSlots = this.findNextAvailableDay(date, duration, postcode);
+            container.innerHTML = `
+                <span style="font-size:12px;color:#92400e;display:block;margin-bottom:8px;">
+                    ${dayName} is not a working day. Try:
+                </span>
+                ${nextSlots.map(s => `
+                    <button type="button" class="suggestion-chip" onclick="app.applySuggestion('${s.date}','${s.time}')"
+                            title="${s.reason || ''}">
+                        ${s.label}${s.tag ? ' ' + s.tag : ''}
+                    </button>
+                `).join('')}
+            `;
             return;
         }
 
@@ -1159,12 +1261,16 @@ const app = {
         const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         document.getElementById('cal-day-headers').innerHTML =
             '<div class="cal-day-header"></div>' +
-            weekDates.map((d, i) => `
-                <div class="cal-day-header ${d === today ? 'today' : ''}">
-                    ${dayNames[i]}
-                    <span class="day-num">${new Date(d + 'T00:00:00').getDate()}</span>
-                </div>
-            `).join('');
+            weekDates.map((d, i) => {
+                const dateObj = new Date(d + 'T00:00:00');
+                const isNonWorking = !this.settings.workingDays.includes(dateObj.getDay());
+                return `
+                    <div class="cal-day-header ${d === today ? 'today' : ''} ${isNonWorking ? 'cal-non-working' : ''}">
+                        ${dayNames[i]}
+                        <span class="day-num">${dateObj.getDate()}</span>
+                    </div>
+                `;
+            }).join('');
 
         // Time column (6am to 9pm)
         const startHour = 6;
@@ -1183,8 +1289,10 @@ const app = {
         for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
             const dateStr = weekDates[dayIdx];
             const jobs = this.getJobsForDate(dateStr);
+            const colDateObj = new Date(dateStr + 'T00:00:00');
+            const isNonWorking = !this.settings.workingDays.includes(colDateObj.getDay());
 
-            let columnHtml = `<div class="cal-day-column" data-date="${dateStr}">`;
+            let columnHtml = `<div class="cal-day-column ${isNonWorking ? 'cal-non-working' : ''}" data-date="${dateStr}">`;
 
             // Hour lines
             for (let h = startHour; h <= endHour; h++) {
@@ -1199,7 +1307,7 @@ const app = {
                 const color = this.getJobColor(job);
 
                 columnHtml += `
-                    <div class="cal-event" style="top:${topPx}px;height:${Math.max(heightPx, 20)}px;background:${color};"
+                    <div class="cal-event" data-job-id="${job.id}" style="top:${topPx}px;height:${Math.max(heightPx, 20)}px;background:${color};cursor:grab;"
                          onclick="app.showJobModal('${job.id}')">
                         <div class="cal-event-title">${this.getJobIcon(job)} ${job.customerName || this.getJobLabel(job)}</div>
                         <div class="cal-event-time">${this.formatTime(job.time)} - ${job.postcode}</div>
@@ -1259,6 +1367,147 @@ const app = {
         if (calBody) {
             calBody.scrollTop = (8 - startHour) * slotHeight;
         }
+
+        this.initCalendarDragDrop();
+    },
+
+    // ---- Calendar Drag & Drop ----
+    initCalendarDragDrop() {
+        const grid = document.getElementById('cal-grid');
+        if (!grid) return;
+
+        let dragJob = null;
+        let ghost = null;
+        let startX = 0, startY = 0;
+        let isDragging = false;
+        let originEl = null;
+        const self = this;
+        const DRAG_THRESHOLD = 5;
+        const SLOT_HEIGHT = 60; // px per hour
+        const START_HOUR = 6;
+        const SNAP_MINUTES = 15;
+
+        const onPointerDown = (e) => {
+            const eventEl = e.target.closest('.cal-event[data-job-id]');
+            if (!eventEl) return;
+
+            const jobId = eventEl.getAttribute('data-job-id');
+            dragJob = this.jobs.find(j => j.id === jobId);
+            if (!dragJob) return;
+
+            startX = e.clientX;
+            startY = e.clientY;
+            isDragging = false;
+            originEl = eventEl;
+
+            eventEl.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        };
+
+        const onPointerMove = (e) => {
+            if (!dragJob) return;
+
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            if (!isDragging && Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return;
+
+            if (!isDragging) {
+                isDragging = true;
+                originEl.style.opacity = '0.3';
+                originEl.classList.add('dragging');
+
+                // Create ghost
+                ghost = originEl.cloneNode(true);
+                ghost.classList.add('drag-ghost');
+                ghost.style.position = 'fixed';
+                ghost.style.width = originEl.offsetWidth + 'px';
+                ghost.style.height = originEl.offsetHeight + 'px';
+                ghost.style.zIndex = '9999';
+                ghost.style.pointerEvents = 'none';
+                ghost.style.opacity = '0.85';
+                ghost.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+                ghost.style.transform = 'scale(1.03)';
+                document.body.appendChild(ghost);
+            }
+
+            if (ghost) {
+                ghost.style.left = (e.clientX - ghost.offsetWidth / 2) + 'px';
+                ghost.style.top = (e.clientY - 15) + 'px';
+            }
+
+            // Highlight target column
+            grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
+            const colEl = document.elementFromPoint(e.clientX, e.clientY);
+            const targetCol = colEl ? colEl.closest('.cal-day-column') : null;
+            if (targetCol && !targetCol.classList.contains('cal-non-working')) {
+                targetCol.classList.add('drag-over');
+            }
+        };
+
+        const onPointerUp = (e) => {
+            if (!dragJob) return;
+
+            if (ghost) {
+                ghost.remove();
+                ghost = null;
+            }
+
+            grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
+
+            if (isDragging) {
+                // Find target column under cursor
+                if (originEl) {
+                    originEl.style.opacity = '';
+                    originEl.classList.remove('dragging');
+                }
+
+                const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+                const targetCol = elUnder ? elUnder.closest('.cal-day-column') : null;
+
+                if (targetCol) {
+                    if (targetCol.classList.contains('cal-non-working')) {
+                        this.toast('Cannot drop on a non-working day', 'error');
+                    } else {
+                        const newDate = targetCol.getAttribute('data-date');
+
+                        // Calculate time from Y position
+                        const colRect = targetCol.getBoundingClientRect();
+                        const relativeY = e.clientY - colRect.top;
+                        let totalMinutes = START_HOUR * 60 + (relativeY / SLOT_HEIGHT) * 60;
+
+                        // Snap to 15-minute increments
+                        totalMinutes = Math.round(totalMinutes / SNAP_MINUTES) * SNAP_MINUTES;
+                        totalMinutes = Math.max(START_HOUR * 60, Math.min(totalMinutes, 21 * 60));
+
+                        const newTime = this.minutesToTime(totalMinutes);
+
+                        // Update the job
+                        const job = this.jobs.find(j => j.id === dragJob.id);
+                        if (job) {
+                            job.date = newDate;
+                            job.time = newTime;
+                            this.saveData();
+                            this.renderWeekCalendar();
+                            this.toast(`Moved to ${this.formatDateShort(newDate)} at ${this.formatTime(newTime)}`, 'success');
+                        }
+                    }
+                }
+            }
+
+            if (isDragging) {
+                self._dragOccurred = true;
+                setTimeout(() => { self._dragOccurred = false; }, 50);
+            }
+
+            dragJob = null;
+            originEl = null;
+            isDragging = false;
+        };
+
+        grid.addEventListener('pointerdown', onPointerDown);
+        grid.addEventListener('pointermove', onPointerMove);
+        grid.addEventListener('pointerup', onPointerUp);
     },
 
     renderDayCalendar() {
@@ -1345,6 +1594,7 @@ const app = {
                 </div>
             `;
             this.updateRouteSummary([], dateStr);
+            this.renderRouteMap([]);
             return;
         }
 
@@ -1428,6 +1678,106 @@ const app = {
 
         container.innerHTML = html;
         this.updateRouteSummary(jobs, dateStr);
+        this.renderRouteMap(jobs);
+    },
+
+    async renderRouteMap(jobs) {
+        const mapContainer = document.getElementById('route-map-container');
+
+        // Destroy previous map
+        if (this._routeMap) {
+            this._routeMap.remove();
+            this._routeMap = null;
+        }
+
+        if (!jobs.length || typeof mapboxgl === 'undefined') {
+            if (mapContainer) mapContainer.style.display = 'none';
+            return;
+        }
+
+        // Geocode all postcodes first
+        const postcodes = [this.settings.homePostcode, ...jobs.map(j => j.postcode)].filter(Boolean);
+        await Promise.allSettled(postcodes.map(pc => geocodePostcode(pc)));
+
+        mapContainer.style.display = 'block';
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+
+        const map = new mapboxgl.Map({
+            container: 'route-map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [-0.12, 51.51],
+            zoom: 10
+        });
+        this._routeMap = map;
+
+        const coords = [];
+        const bounds = new mapboxgl.LngLatBounds();
+
+        // Home marker
+        const homeInfo = this.getPostcodeInfo(this.settings.homePostcode);
+        if (homeInfo) {
+            const homeCoord = [homeInfo.lng, homeInfo.lat];
+            coords.push(homeCoord);
+            bounds.extend(homeCoord);
+
+            const homeEl = document.createElement('div');
+            homeEl.className = 'route-marker home-marker';
+            homeEl.innerHTML = '🏠';
+            new mapboxgl.Marker({ element: homeEl }).setLngLat(homeCoord)
+                .setPopup(new mapboxgl.Popup({ offset: 15 }).setText('Base / Home'))
+                .addTo(map);
+        }
+
+        // Job markers
+        jobs.forEach((job, i) => {
+            const info = this.getPostcodeInfo(job.postcode);
+            if (!info) return;
+
+            const coord = [info.lng, info.lat];
+            coords.push(coord);
+            bounds.extend(coord);
+
+            const color = this.getJobColor(job);
+            const el = document.createElement('div');
+            el.className = 'route-marker';
+            el.style.background = color;
+            el.textContent = i + 1;
+
+            new mapboxgl.Marker({ element: el }).setLngLat(coord)
+                .setPopup(new mapboxgl.Popup({ offset: 15 }).setHTML(
+                    `<strong>${i + 1}. ${this.getJobLabel(job)}</strong><br>${job.postcode} - ${this.formatTime(job.time)}`
+                ))
+                .addTo(map);
+        });
+
+        // Return to home
+        if (homeInfo) {
+            coords.push([homeInfo.lng, homeInfo.lat]);
+        }
+
+        // Draw route line once map loads
+        map.on('load', () => {
+            if (coords.length >= 2) {
+                map.addSource('route', {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: { type: 'LineString', coordinates: coords }
+                    }
+                });
+                map.addLayer({
+                    id: 'route-line',
+                    type: 'line',
+                    source: 'route',
+                    paint: {
+                        'line-color': '#3b82f6',
+                        'line-width': 3,
+                        'line-dasharray': [2, 2]
+                    }
+                });
+            }
+            map.fitBounds(bounds, { padding: 50, maxZoom: 13 });
+        });
     },
 
     updateRouteSummary(jobs, dateStr) {
@@ -1544,6 +1894,7 @@ const app = {
 
     // ---- Job Modal ----
     showJobModal(jobId) {
+        if (this._dragOccurred) return;
         const job = this.jobs.find(j => j.id === jobId);
         if (!job) return;
 

@@ -8,6 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js" defer></script>
+
     <!-- Firebase SDK (loaded async so it doesn't block page render) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
@@ -323,6 +327,10 @@
                         <input type="date" id="route-date" class="date-input">
                         <button class="btn btn-primary" id="optimize-route-btn">Optimize Route</button>
                     </div>
+                </div>
+
+                <div class="route-map-container" id="route-map-container" style="display:none;">
+                    <div id="route-map" class="route-map"></div>
                 </div>
 
                 <div class="route-container">

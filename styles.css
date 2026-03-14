@@ -119,10 +119,12 @@ body {
     gap: 12px;
     padding: 12px 20px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
     color: rgba(255,255,255,0.6);
     font-size: 14px;
     font-weight: 500;
+    border-radius: 0 8px 8px 0;
+    margin-right: 8px;
 }
 
 .nav-item:hover {
@@ -238,7 +240,8 @@ body {
 
 /* ---- Views ---- */
 .view { display: none; }
-.view.active { display: block; }
+.view.active { display: block; animation: viewFadeIn 0.25s ease; }
+@keyframes viewFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .view-header {
     display: flex;
@@ -331,11 +334,12 @@ body {
     border: 1px solid var(--border);
     overflow: hidden;
     box-shadow: var(--shadow);
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.25s ease, transform 0.2s ease;
 }
 
 .card:hover {
     box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .card-header {
@@ -686,7 +690,11 @@ body {
     grid-template-columns: 60px 1fr;
     max-height: 600px;
     overflow-y: auto;
+    scroll-behavior: smooth;
 }
+.cal-body::-webkit-scrollbar { width: 4px; }
+.cal-body::-webkit-scrollbar-track { background: transparent; }
+.cal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .cal-times {
     border-right: 1px solid var(--border);
@@ -767,6 +775,48 @@ body {
     color: var(--text-muted);
     font-style: italic;
     border: 1px dashed var(--border);
+}
+
+/* Non-working day columns */
+.cal-day-header.cal-non-working {
+    color: var(--text-muted);
+    opacity: 0.45;
+}
+.cal-day-header.cal-non-working .day-num {
+    color: var(--text-muted);
+    background: transparent;
+}
+.cal-day-column.cal-non-working {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(148, 163, 184, 0.06),
+        rgba(148, 163, 184, 0.06) 8px,
+        rgba(148, 163, 184, 0.15) 8px,
+        rgba(148, 163, 184, 0.15) 16px
+    ) !important;
+    opacity: 0.5;
+}
+.cal-day-column.cal-non-working .cal-hour-line {
+    border-bottom-color: rgba(226, 232, 240, 0.2);
+}
+
+/* Drag & Drop */
+.cal-event.dragging {
+    opacity: 0.3 !important;
+    cursor: grabbing;
+}
+.drag-ghost {
+    border-radius: var(--radius);
+    transition: none;
+    cursor: grabbing;
+}
+.cal-day-column.drag-over {
+    background: rgba(59, 130, 246, 0.08) !important;
+    opacity: 1 !important;
+}
+.cal-event[data-job-id] {
+    touch-action: none;
+    user-select: none;
 }
 
 .cal-event.time-block {
@@ -887,6 +937,10 @@ body {
 .form-section:hover {
     box-shadow: var(--shadow-md);
     border-color: rgba(79, 70, 229, 0.2);
+}
+.form-section:focus-within {
+    border-color: rgba(79, 70, 229, 0.3);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(79, 70, 229, 0.06);
 }
 
 .form-section h3 {
@@ -1092,6 +1146,41 @@ body {
 }
 
 /* ---- Route Planner ---- */
+/* Route Map */
+.route-map-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    height: 350px;
+    margin-bottom: 20px;
+    animation: fadeSlideUp 0.3s ease both;
+}
+.route-map {
+    width: 100%;
+    height: 100%;
+}
+.route-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+.route-marker:hover { transform: scale(1.15); }
+.route-marker.home-marker {
+    background: var(--success);
+    font-size: 15px;
+}
+
 .route-container {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -1113,7 +1202,13 @@ body {
     border-radius: var(--radius-sm);
     transition: background 0.15s;
     position: relative;
+    animation: fadeSlideUp 0.3s ease both;
 }
+.route-item:nth-child(2) { animation-delay: 0.04s; }
+.route-item:nth-child(3) { animation-delay: 0.08s; }
+.route-item:nth-child(4) { animation-delay: 0.12s; }
+.route-item:nth-child(5) { animation-delay: 0.16s; }
+.route-item:nth-child(6) { animation-delay: 0.20s; }
 
 .route-item:hover { background: var(--bg); }
 
