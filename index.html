@@ -3,706 +3,1539 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>LockRoute Pro - Auto Locksmith Scheduling</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>LockRoute Pro — Smart Scheduling for Auto Locksmiths</title>
+    <meta name="description" content="The all-in-one scheduling, routing and job management app built specifically for auto locksmiths. Save hours every week. Just £10/month.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================
+           Reset & Base
+           ============================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <!-- Mapbox GL JS -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js" defer></script>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #818cf8;
+            --accent: #f59e0b;
+            --accent-dark: #d97706;
+            --dark: #0f172a;
+            --dark-mid: #1e293b;
+            --gray-900: #111827;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-400: #9ca3af;
+            --gray-300: #d1d5db;
+            --gray-100: #f3f4f6;
+            --white: #ffffff;
+            --success: #10b981;
+            --radius: 16px;
+            --radius-sm: 8px;
+        }
 
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            line-height: 1.6;
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        img { max-width: 100%; display: block; }
+        a { text-decoration: none; color: inherit; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ============================
+           Typography
+           ============================ */
+        h1, h2, h3, h4 { line-height: 1.2; font-weight: 800; }
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); }
+        h2 { font-size: clamp(2rem, 4vw, 3rem); }
+        h3 { font-size: 1.25rem; font-weight: 700; }
+
+        .section-label {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+            padding: 6px 16px;
+            border-radius: 100px;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            max-width: 600px;
+            margin: 16px auto 0;
+        }
+
+        .text-center { text-align: center; }
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ============================
+           Buttons
+           ============================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            box-shadow: 0 4px 24px rgba(79, 70, 229, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary);
+            border: 2px solid var(--gray-300);
+        }
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: var(--white);
+            box-shadow: 0 4px 24px rgba(245, 158, 11, 0.4);
+            font-size: 1.125rem;
+            padding: 18px 40px;
+            border-radius: 14px;
+        }
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.5);
+        }
+
+        .btn-lg { padding: 18px 40px; font-size: 1.125rem; }
+
+        /* ============================
+           Navigation
+           ============================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .nav-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary); }
+
+        .nav-cta {
+            padding: 10px 24px !important;
+            font-size: 0.9rem !important;
+        }
+
+        /* ============================
+           Hero Section
+           ============================ */
+        .hero {
+            position: relative;
+            padding: 160px 0 100px;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79, 70, 229, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(129, 140, 248, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 50% at 20% 80%, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        /* Hero photo strip */
+        .hero-photos {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 48px;
+            margin-bottom: -24px;
+            position: relative;
+        }
+
+        .hero-photo {
+            width: 200px;
+            height: 140px;
+            border-radius: 16px;
+            object-fit: cover;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border: 3px solid var(--white);
+        }
+
+        .hero-photo:nth-child(1) { transform: rotate(-3deg); }
+        .hero-photo:nth-child(2) { transform: rotate(1deg) translateY(-8px); }
+        .hero-photo:nth-child(3) { transform: rotate(2deg); }
+        .hero-photo:nth-child(4) { transform: rotate(-2deg) translateY(-4px); }
+
+        @media (max-width: 768px) {
+            .hero-photos { flex-wrap: wrap; }
+            .hero-photo { width: 45%; }
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(79, 70, 229, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79, 70, 229, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 0%, transparent 70%);
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .hero-badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        .hero h1 {
+            margin-bottom: 24px;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--gray-600);
+            max-width: 580px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .hero-social-proof {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 48px;
+            padding-top: 48px;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .hero-stat-label {
+            font-size: 0.8rem;
+            color: var(--gray-400);
+            font-weight: 500;
+        }
+
+        .hero-stat-divider {
+            width: 1px;
+            height: 40px;
+            background: var(--gray-200);
+        }
+
+        /* Hero Image / App Preview */
+        .hero-image {
+            margin-top: 64px;
+            position: relative;
+        }
+
+        .hero-image-wrapper {
+            position: relative;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-mid) 100%);
+            border-radius: 20px;
+            padding: 20px 20px 0;
+            box-shadow:
+                0 32px 64px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255,255,255,0.05) inset;
+            overflow: hidden;
+        }
+
+        .hero-browser-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .hero-browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--gray-700);
+        }
+        .hero-browser-dot:nth-child(1) { background: #ff5f57; }
+        .hero-browser-dot:nth-child(2) { background: #febc2e; }
+        .hero-browser-dot:nth-child(3) { background: #28c840; }
+
+        .hero-app-preview {
+            background: linear-gradient(145deg, #e8edf5 0%, #dde3ee 100%);
+            border-radius: 12px 12px 0 0;
+            min-height: 400px;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            overflow: hidden;
+        }
+
+        .preview-sidebar {
+            background: linear-gradient(180deg, var(--dark) 0%, var(--dark-mid) 100%);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preview-sidebar-title {
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-nav-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--gray-400);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .preview-nav-item.active {
+            background: rgba(79, 70, 229, 0.3);
+            color: var(--white);
+        }
+
+        .preview-main {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .preview-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .preview-card-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .preview-card-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .preview-card-wide { grid-column: 1 / -1; }
+
+        .preview-job {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .preview-job:last-child { border-bottom: none; }
+
+        .preview-job-time {
+            background: var(--primary);
+            color: var(--white);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .preview-job-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .preview-job-detail {
+            font-size: 0.7rem;
+            color: var(--gray-400);
+        }
+
+        /* Floating elements */
+        .hero-float {
+            position: absolute;
+            background: var(--white);
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: float 6s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        .hero-float-1 {
+            top: 20%;
+            left: -40px;
+            animation-delay: 0s;
+        }
+
+        .hero-float-2 {
+            top: 40%;
+            right: -30px;
+            animation-delay: 2s;
+        }
+
+        .hero-float-3 {
+            bottom: 15%;
+            left: -20px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .float-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .float-icon-blue { background: rgba(79, 70, 229, 0.1); }
+        .float-icon-green { background: rgba(16, 185, 129, 0.1); }
+        .float-icon-amber { background: rgba(245, 158, 11, 0.1); }
+
+        .float-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .float-subtext {
+            font-size: 0.7rem;
+            color: var(--gray-400);
+        }
+
+        /* ============================
+           Features Section
+           ============================ */
+        .features {
+            padding: 120px 0;
+            background: var(--gray-100);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 64px;
+        }
+
+        .feature-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 36px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.08);
+            border-color: rgba(79, 70, 229, 0.1);
+        }
+
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .fi-purple { background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(129,140,248,0.15)); }
+        .fi-green { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(52,211,153,0.15)); }
+        .fi-amber { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.15)); }
+        .fi-blue { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(96,165,250,0.15)); }
+        .fi-red { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(248,113,113,0.15)); }
+        .fi-teal { background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(45,212,191,0.15)); }
+
+        .feature-card h3 { margin-bottom: 12px; }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--gray-600);
+            line-height: 1.6;
+        }
+
+        /* ============================
+           How It Works
+           ============================ */
+        .how-it-works {
+            padding: 120px 0;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 48px;
+            margin-top: 64px;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 15%;
+            right: 15%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light), var(--accent));
+            z-index: 0;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            font-size: 1.75rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
+        }
+
+        .step h3 { margin-bottom: 12px; }
+
+        .step p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        /* ============================
+           Showcase / Screenshots
+           ============================ */
+        .showcase {
+            padding: 120px 0;
+            background: linear-gradient(180deg, var(--dark) 0%, #0c1222 100%);
+            color: var(--white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 50% 80% at 20% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 80% at 80% 50%, rgba(245, 158, 11, 0.1) 0%, transparent 60%);
+        }
+
+        .showcase .section-subtitle { color: var(--gray-400); }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 64px;
+            position: relative;
+        }
+
+        .showcase-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius);
+            padding: 32px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .showcase-item:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-4px);
+        }
+
+        .showcase-item-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .showcase-item h3 {
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+        }
+
+        .showcase-item p {
+            color: var(--gray-400);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .showcase-item-tag {
+            display: inline-block;
+            background: rgba(79, 70, 229, 0.2);
+            color: var(--primary-light);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 100px;
+            margin-top: 16px;
+        }
+
+        .showcase-hero-img {
+            grid-column: 1 / -1;
+            border-radius: var(--radius);
+            overflow: hidden;
+            position: relative;
+            height: 300px;
+        }
+
+        .showcase-hero-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.5);
+        }
+
+        .showcase-hero-img-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .showcase-hero-img-overlay h3 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .showcase-hero-img-overlay p {
+            color: var(--gray-300) !important;
+            font-size: 1rem;
+        }
+
+        /* ============================
+           Pricing
+           ============================ */
+        .pricing {
+            padding: 120px 0;
+            background: var(--gray-100);
+        }
+
+        .pricing-card {
+            max-width: 480px;
+            margin: 64px auto 0;
+            background: var(--white);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.08);
+            border: 2px solid var(--primary);
+            position: relative;
+        }
+
+        .pricing-popular {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: var(--white);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 100px;
+        }
+
+        .pricing-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            padding: 48px 40px 40px;
+            text-align: center;
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .pricing-header p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .pricing-amount {
+            margin-top: 24px;
+        }
+
+        .pricing-currency {
+            font-size: 1.5rem;
+            font-weight: 700;
+            vertical-align: top;
+            line-height: 1;
+            position: relative;
+            top: 12px;
+        }
+
+        .pricing-value {
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .pricing-period {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .pricing-body {
+            padding: 40px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            font-size: 0.95rem;
+            color: var(--gray-700);
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .pricing-features li:last-child { border-bottom: none; }
+
+        .pricing-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .pricing-cta {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .pricing-guarantee {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: var(--gray-400);
+        }
+
+        /* ============================
+           Testimonials
+           ============================ */
+        .testimonials {
+            padding: 120px 0;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 64px;
+        }
+
+        .testimonial-card {
+            background: var(--white);
+            border: 1px solid var(--gray-100);
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+
+        .testimonial-stars {
+            color: var(--accent);
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+
+        .testimonial-text {
+            font-size: 0.95rem;
+            color: var(--gray-700);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-role {
+            font-size: 0.8rem;
+            color: var(--gray-400);
+        }
+
+        /* ============================
+           CTA Section
+           ============================ */
+        .cta {
+            padding: 120px 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(245,158,11,0.15) 0%, transparent 50%);
+        }
+
+        .cta-content { position: relative; }
+
+        .cta h2 {
+            margin-bottom: 16px;
+            font-size: clamp(2rem, 4vw, 2.75rem);
+        }
+
+        .cta p {
+            font-size: 1.125rem;
+            opacity: 0.85;
+            margin-bottom: 40px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ============================
+           Footer
+           ============================ */
+        .footer {
+            background: var(--dark);
+            color: var(--gray-400);
+            padding: 64px 0 32px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-top: 16px;
+            max-width: 300px;
+        }
+
+        .footer h4 {
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--white); }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 32px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        /* ============================
+           Responsive
+           ============================ */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+
+            .hero { padding: 120px 0 60px; }
+            .hero-social-proof { flex-wrap: wrap; gap: 16px; }
+
+            .features-grid,
+            .steps,
+            .testimonials-grid,
+            .showcase-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .steps::before { display: none; }
+
+            .hero-app-preview {
+                grid-template-columns: 1fr;
+                min-height: 300px;
+            }
+            .preview-sidebar { display: none; }
+            .preview-main { grid-template-columns: 1fr 1fr; }
+
+            .hero-float { display: none; }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .preview-main { grid-template-columns: 1fr; }
+            .pricing-card { margin: 48px 0 0; }
+            .footer-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ============================
+           Animations
+           ============================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+        .delay-4 { transition-delay: 0.4s; }
+        .delay-5 { transition-delay: 0.5s; }
+    </style>
 </head>
 <body>
-    <!-- Auth Screen (shown when not logged in) -->
-    <div id="auth-screen" style="display:none;">
-        <div class="auth-container">
-            <div class="auth-header">
-                <span style="font-size:2.5rem;">🔑</span>
-                <h1>LockRoute Pro</h1>
-                <p class="auth-subtitle">Auto Locksmith Scheduling</p>
-            </div>
 
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required placeholder="you@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required placeholder="Your password" minlength="6">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Log In</button>
-            </form>
-
-            <form id="signup-form" style="display:none;">
-                <div class="form-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" required placeholder="you@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required placeholder="Min 6 characters" minlength="6">
-                </div>
-                <div class="form-group">
-                    <label for="signup-confirm">Confirm Password</label>
-                    <input type="password" id="signup-confirm" required placeholder="Repeat password" minlength="6">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
-            </form>
-
-            <p id="auth-error" class="auth-error"></p>
-
-            <p id="auth-toggle" class="auth-toggle">
-                Don't have an account? <a href="#" id="auth-toggle-link">Sign up</a>
-            </p>
-        </div>
-    </div>
-
-    <div id="app" style="display:none;">
-        <!-- Sidebar Navigation -->
-        <nav id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <span class="logo-icon">🔑</span>
-                    <span class="logo-text">LockRoute Pro</span>
-                </div>
-            </div>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <div class="nav-logo-icon">🔑</div>
+                LockRoute Pro
+            </a>
             <ul class="nav-links">
-                <li class="nav-item active" data-view="dashboard">
-                    <span class="nav-icon">📊</span>
-                    <span class="nav-label">Dashboard</span>
-                </li>
-                <li class="nav-item" data-view="calendar">
-                    <span class="nav-icon">📅</span>
-                    <span class="nav-label">Calendar</span>
-                </li>
-                <li class="nav-item" data-view="add-job">
-                    <span class="nav-icon">➕</span>
-                    <span class="nav-label">New Job</span>
-                </li>
-                <li class="nav-item" data-view="route">
-                    <span class="nav-icon">🗺️</span>
-                    <span class="nav-label">Route Planner</span>
-                </li>
-                <li class="nav-item" data-view="jotter">
-                    <span class="nav-icon">📝</span>
-                    <span class="nav-label">Jotter</span>
-                </li>
-                <li class="nav-item" data-view="settings">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-label">Settings</span>
-                </li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="app.html" class="btn btn-primary nav-cta">Launch App</a></li>
             </ul>
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <span id="user-email" class="user-email"></span>
-                    <button class="btn btn-outline btn-sm" onclick="app.logout()">Log Out</button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-grid"></div>
+        <div class="container">
+            <div class="hero-content fade-in">
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Built for auto locksmiths
                 </div>
-                <div class="quick-stats">
-                    <div class="stat">
-                        <span class="stat-number" id="today-jobs-count">0</span>
-                        <span class="stat-label">Today</span>
+                <h1>Stop juggling jobs.<br><span class="text-gradient">Start routing smarter.</span></h1>
+                <p class="hero-subtitle">The all-in-one scheduling, routing and job management app built specifically for mobile auto locksmiths. Save hours every week.</p>
+                <div class="hero-buttons">
+                    <a href="app.html" class="btn btn-primary btn-lg">Get Started Free</a>
+                    <a href="#features" class="btn btn-secondary btn-lg">See Features</a>
+                </div>
+                <div class="hero-social-proof">
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">500+</div>
+                        <div class="hero-stat-label">Jobs Managed</div>
                     </div>
-                    <div class="stat">
-                        <span class="stat-number" id="week-jobs-count">0</span>
-                        <span class="stat-label">This Week</span>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">98%</div>
+                        <div class="hero-stat-label">Time Saved</div>
+                    </div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">4.9/5</div>
+                        <div class="hero-stat-label">User Rating</div>
                     </div>
                 </div>
             </div>
-        </nav>
 
-        <!-- Mobile Header -->
-        <header id="mobile-header">
-            <button id="menu-toggle" class="icon-btn">☰</button>
-            <span class="mobile-title">LockRoute Pro</span>
-            <button id="quick-add-btn" class="icon-btn">➕</button>
-        </header>
+            <!-- Locksmith Photos -->
+            <div class="hero-photos fade-in delay-1">
+                <img class="hero-photo" src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=280&fit=crop&crop=center" alt="Car key programming">
+                <img class="hero-photo" src="https://images.unsplash.com/photo-1449965408869-ebd3fee7710d?w=400&h=280&fit=crop&crop=center" alt="Locksmith at work">
+                <img class="hero-photo" src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=280&fit=crop&crop=center" alt="Modern car">
+                <img class="hero-photo" src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=280&fit=crop&crop=center" alt="Professional locksmith van">
+            </div>
 
-        <!-- Main Content Area -->
-        <main id="main-content">
-            <!-- DASHBOARD VIEW -->
-            <section id="view-dashboard" class="view active">
-                <div class="view-header">
-                    <h1>Dashboard</h1>
-                    <div class="header-actions">
-                        <span id="dashboard-date" class="date-display"></span>
-                        <button class="btn btn-primary" onclick="app.showView('add-job')">+ New Job</button>
+            <!-- App Preview -->
+            <div class="hero-image fade-in delay-2">
+                <div class="hero-image-wrapper">
+                    <div class="hero-browser-bar">
+                        <div class="hero-browser-dot"></div>
+                        <div class="hero-browser-dot"></div>
+                        <div class="hero-browser-dot"></div>
                     </div>
-                </div>
-
-                <div class="dashboard-grid">
-                    <!-- Today's Schedule -->
-                    <div class="card today-schedule">
-                        <div class="card-header">
-                            <h2>Today's Schedule</h2>
-                            <span class="badge" id="today-badge">0 jobs</span>
+                    <div class="hero-app-preview">
+                        <div class="preview-sidebar">
+                            <div class="preview-sidebar-title">🔑 LockRoute Pro</div>
+                            <div class="preview-nav-item active">📊 Dashboard</div>
+                            <div class="preview-nav-item">📅 Calendar</div>
+                            <div class="preview-nav-item">➕ New Job</div>
+                            <div class="preview-nav-item">🗺️ Route Planner</div>
+                            <div class="preview-nav-item">📝 Jotter</div>
+                            <div class="preview-nav-item">⚙️ Settings</div>
                         </div>
-                        <div class="timeline" id="today-timeline">
-                            <div class="empty-state">
-                                <span class="empty-icon">📋</span>
-                                <p>No jobs scheduled for today</p>
-                                <button class="btn btn-outline" onclick="app.showView('add-job')">Schedule a job</button>
+                        <div class="preview-main">
+                            <div class="preview-card">
+                                <div class="preview-card-title">Today's Jobs</div>
+                                <div class="preview-card-value">4</div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Upcoming Jobs -->
-                    <div class="card upcoming-jobs">
-                        <div class="card-header">
-                            <h2>Upcoming Jobs</h2>
-                        </div>
-                        <div id="upcoming-list">
-                            <div class="empty-state">
-                                <span class="empty-icon">📅</span>
-                                <p>No upcoming jobs</p>
+                            <div class="preview-card">
+                                <div class="preview-card-title">This Week</div>
+                                <div class="preview-card-value">12</div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Next Available Slot -->
-                    <div class="card next-slot">
-                        <div class="card-header">
-                            <h2>Next Available Slot</h2>
-                        </div>
-                        <div id="next-slot-info" class="slot-display">
-                            <span class="slot-time">--</span>
-                            <span class="slot-detail">No schedule set up yet</span>
-                        </div>
-                    </div>
-
-                    <!-- Quick Stats -->
-                    <div class="card stats-card">
-                        <div class="card-header">
-                            <h2>This Week</h2>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-total-jobs">0</span>
-                                <span class="stat-desc">Total Jobs</span>
+                            <div class="preview-card">
+                                <div class="preview-card-title">Earnings</div>
+                                <div class="preview-card-value">£2,340</div>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-hours-booked">0h</span>
-                                <span class="stat-desc">Hours Booked</span>
+                            <div class="preview-card">
+                                <div class="preview-card-title">Next Slot</div>
+                                <div class="preview-card-value" style="font-size:1rem;color:var(--primary);">2:15 PM</div>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-areas">0</span>
-                                <span class="stat-desc">Areas Covered</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-value" id="stat-free-slots">0</span>
-                                <span class="stat-desc">Free Slots</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Earnings -->
-                    <div class="card earnings-card">
-                        <div class="card-header">
-                            <h2>Earnings</h2>
-                        </div>
-                        <div class="stats-grid stats-grid-2">
-                            <div class="stat-item">
-                                <span class="stat-value stat-value-earnings" id="stat-earnings-week">£0</span>
-                                <span class="stat-desc">This Week</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-value stat-value-earnings" id="stat-earnings-upcoming">£0</span>
-                                <span class="stat-desc">All Upcoming</span>
-                            </div>
-                        </div>
-                        <div id="vat-earnings-breakdown" class="vat-earnings-breakdown" style="display:none;">
-                            <div class="vat-earnings-row">
-                                <span>Net: <strong id="stat-earnings-net">£0</strong></span>
-                                <span>VAT: <strong id="stat-earnings-vat">£0</strong></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CALENDAR VIEW -->
-            <section id="view-calendar" class="view">
-                <div class="view-header">
-                    <h1>Calendar</h1>
-                    <div class="header-actions">
-                        <div class="calendar-nav">
-                            <button class="btn btn-icon" id="cal-prev">◀</button>
-                            <span id="cal-title" class="cal-title">March 2026</span>
-                            <button class="btn btn-icon" id="cal-next">▶</button>
-                        </div>
-                        <button class="btn btn-outline" id="add-block-btn" style="font-size:13px;">+ Block Time</button>
-                        <div class="view-toggle">
-                            <button class="toggle-btn active" data-cal-view="week">Week</button>
-                            <button class="toggle-btn" data-cal-view="day">Day</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Week View -->
-                <div id="calendar-week" class="calendar-container">
-                    <div class="cal-header-row" id="cal-day-headers"></div>
-                    <div class="cal-body">
-                        <div class="cal-times" id="cal-times"></div>
-                        <div class="cal-grid" id="cal-grid"></div>
-                    </div>
-                </div>
-
-                <!-- Day View -->
-                <div id="calendar-day" class="calendar-container" style="display:none;">
-                    <div class="day-view-header" id="day-view-header"></div>
-                    <div class="day-schedule" id="day-schedule"></div>
-                </div>
-            </section>
-
-            <!-- ADD JOB VIEW -->
-            <section id="view-add-job" class="view">
-                <div class="view-header">
-                    <h1 id="job-form-title">New Job</h1>
-                </div>
-
-                <div class="form-container">
-                    <form id="job-form" class="job-form">
-                        <input type="hidden" id="job-id" value="">
-
-                        <!-- Step 1: Where? -->
-                        <div class="form-section">
-                            <h3><span class="step-num">1</span> Where are they?</h3>
-                            <div class="form-group">
-                                <label for="job-postcode">Postcode <span class="required">*</span></label>
-                                <input type="text" id="job-postcode" placeholder="e.g. SW1A 1AA" required
-                                       class="postcode-input" maxlength="8" autocomplete="off">
-                                <span class="input-hint" id="postcode-hint"></span>
-                            </div>
-                        </div>
-
-                        <!-- Step 2: What? -->
-                        <div class="form-section">
-                            <h3><span class="step-num">2</span> What do they need?</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="job-type">Job Type <span class="required">*</span></label>
-                                    <select id="job-type" required>
-                                        <option value="">Select job type...</option>
-                                        <!-- Populated dynamically from JS -->
-                                    </select>
+                            <div class="preview-card preview-card-wide">
+                                <div class="preview-card-title">Upcoming Jobs</div>
+                                <div class="preview-job">
+                                    <span class="preview-job-time">9:00 AM</span>
+                                    <div>
+                                        <div class="preview-job-name">🚗 Car Lockout — J. Smith</div>
+                                        <div class="preview-job-detail">BS1 4DJ · Ford Fiesta · £85</div>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="job-duration">Duration</label>
-                                    <select id="job-duration">
-                                        <option value="30">30 min</option>
-                                        <option value="45">45 min</option>
-                                        <option value="60" selected>1 hr</option>
-                                        <option value="90">1.5 hr</option>
-                                        <option value="120">2 hr</option>
-                                        <option value="180">3 hr</option>
-                                        <option value="240">4 hr</option>
-                                    </select>
+                                <div class="preview-job">
+                                    <span class="preview-job-time">11:30 AM</span>
+                                    <div>
+                                        <div class="preview-job-name">🔑 Key Cut & Program — M. Jones</div>
+                                        <div class="preview-job-detail">GL8 8EJ · BMW 3 Series · £220</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <input type="hidden" name="priority" value="normal">
-                            <div class="form-group">
-                                <label for="job-reg">Vehicle Reg</label>
-                                <div class="reg-input-row">
-                                    <input type="text" id="job-reg" placeholder="e.g. AB12 CDE" maxlength="8" autocomplete="off" class="reg-input" style="text-transform:uppercase;">
-                                    <button type="button" class="btn btn-outline btn-sm" id="lookup-reg-btn">Look up</button>
-                                </div>
-                                <div id="vehicle-info" class="vehicle-info" style="display:none;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Step 3: When? -->
-                        <div class="form-section">
-                            <h3><span class="step-num">3</span> When?</h3>
-
-                            <!-- Smart Suggestions (above manual inputs — most common action) -->
-                            <div class="suggestions-box" id="suggestions-box">
-                                <h4>Suggested slots based on location</h4>
-                                <div id="suggestions-list" class="suggestions-list">
-                                    <!-- Filled dynamically -->
-                                </div>
-                            </div>
-
-                            <div class="or-divider"><span>or pick manually</span></div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="job-date">Date <span class="required">*</span></label>
-                                    <input type="date" id="job-date" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="job-time">Time <span class="required">*</span></label>
-                                    <input type="time" id="job-time" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step 4: Who? (confirm details) -->
-                        <div class="form-section">
-                            <h3><span class="step-num">4</span> Customer details</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="customer-name">Name</label>
-                                    <input type="text" id="customer-name" placeholder="e.g. John Smith">
-                                </div>
-                                <div class="form-group">
-                                    <label for="customer-phone">Phone</label>
-                                    <input type="tel" id="customer-phone" placeholder="e.g. 07700 900000">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="job-address">Address</label>
-                                    <input type="text" id="job-address" placeholder="e.g. 10 Downing Street">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="job-notes">Notes</label>
-                                <textarea id="job-notes" rows="2" placeholder="e.g. Ford Focus 2019, blue, in the car park..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="job-price">Price Quoted</label>
-                                <div class="price-input-row">
-                                    <span class="price-prefix">£</span>
-                                    <input type="number" id="job-price" placeholder="e.g. 120.00" min="0" step="0.01" class="price-input">
-                                </div>
-                                <div id="vat-breakdown" class="vat-breakdown" style="display:none;">
-                                    <span id="vat-breakdown-text"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Form Actions -->
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-outline" onclick="app.resetJobForm()">Clear</button>
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <span id="form-submit-text">Schedule Job</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- ROUTE PLANNER VIEW -->
-            <section id="view-route" class="view">
-                <div class="view-header">
-                    <h1>Route Planner</h1>
-                    <div class="route-day-nav">
-                        <button class="btn btn-route-nav" id="route-prev-day">◀ Previous Day</button>
-                        <input type="date" id="route-date" class="date-input">
-                        <button class="btn btn-route-nav" id="route-next-day">Next Day ▶</button>
-                    </div>
-                </div>
-
-                <div class="route-map-container" id="route-map-container" style="display:none;">
-                    <div id="route-map" class="route-map"></div>
-                </div>
-
-                <div class="route-container">
-                    <div class="route-list" id="route-list">
-                        <div class="empty-state">
-                            <span class="empty-icon">🗺️</span>
-                            <p>Select a date to see your route</p>
-                        </div>
-                    </div>
-                    <div class="route-summary" id="route-summary">
-                        <div class="summary-card">
-                            <h3>Route Summary</h3>
-                            <div class="summary-stats">
-                                <div class="summary-stat">
-                                    <span class="summary-label">Total Jobs</span>
-                                    <span class="summary-value" id="route-total-jobs">0</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="summary-label">Est. Travel Time</span>
-                                    <span class="summary-value" id="route-travel-time">0 min</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="summary-label">Est. Working Time</span>
-                                    <span class="summary-value" id="route-work-time">0h</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="summary-label">Start</span>
-                                    <span class="summary-value" id="route-start-time">--:--</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="summary-label">Finish</span>
-                                    <span class="summary-value" id="route-end-time">--:--</span>
+                                <div class="preview-job">
+                                    <span class="preview-job-time">2:15 PM</span>
+                                    <div>
+                                        <div class="preview-job-name">🔓 Lock Repair — S. Williams</div>
+                                        <div class="preview-job-detail">SP5 4JE · VW Golf · £150</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- JOTTER VIEW -->
-            <section id="view-jotter" class="view">
-                <div class="view-header">
-                    <h1>Jotter</h1>
-                </div>
-                <div class="jotter-container">
-                    <div class="card jotter-add-card">
-                        <textarea id="jotter-input" rows="3" placeholder="Write a note..."></textarea>
-                        <button class="btn btn-primary" id="jotter-add-btn">Add Note</button>
-                    </div>
-                    <div id="jotter-list">
-                        <div class="empty-state">
-                            <span class="empty-icon">📝</span>
-                            <p>No notes yet</p>
-                        </div>
+                <!-- Floating elements -->
+                <div class="hero-float hero-float-1">
+                    <div class="float-icon float-icon-green">✅</div>
+                    <div>
+                        <div class="float-text">Job Completed</div>
+                        <div class="float-subtext">BMW Key Program — £220</div>
                     </div>
                 </div>
-            </section>
-
-            <!-- SETTINGS VIEW -->
-            <section id="view-settings" class="view">
-                <div class="view-header">
-                    <h1>Settings</h1>
-                </div>
-
-                <div class="settings-container">
-                    <!-- Working Hours -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>Working Hours</h2>
-                        </div>
-                        <div class="settings-body">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="work-start">Start Time</label>
-                                    <input type="time" id="work-start" value="08:00">
-                                </div>
-                                <div class="form-group">
-                                    <label for="work-end">End Time</label>
-                                    <input type="time" id="work-end" value="18:00">
-                                </div>
-                            </div>
-
-                            <h3>Working Days</h3>
-                            <div class="day-toggles" id="working-days">
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="0">
-                                    <span>Sun</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="1" checked>
-                                    <span>Mon</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="2" checked>
-                                    <span>Tue</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="3" checked>
-                                    <span>Wed</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="4" checked>
-                                    <span>Thu</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="5" checked>
-                                    <span>Fri</span>
-                                </label>
-                                <label class="day-toggle">
-                                    <input type="checkbox" data-day="6">
-                                    <span>Sat</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lunch Break -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>Lunch Break</h2>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="lunch-enabled" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="settings-body" id="lunch-settings">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="lunch-start">Lunch Start</label>
-                                    <input type="time" id="lunch-start" value="12:30">
-                                </div>
-                                <div class="form-group">
-                                    <label for="lunch-duration">Duration</label>
-                                    <select id="lunch-duration">
-                                        <option value="30">30 minutes</option>
-                                        <option value="45">45 minutes</option>
-                                        <option value="60" selected>1 hour</option>
-                                        <option value="90">1.5 hours</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Travel Settings -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>Travel & Routing</h2>
-                        </div>
-                        <div class="settings-body">
-                            <div class="form-group">
-                                <label for="home-postcode">Home/Base Postcode</label>
-                                <input type="text" id="home-postcode" placeholder="e.g. SW1A 1AA" maxlength="8">
-                                <span class="input-hint">Used to calculate travel from your base</span>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="default-travel">Default Travel Time Between Jobs</label>
-                                    <select id="default-travel">
-                                        <option value="10">10 minutes</option>
-                                        <option value="15">15 minutes</option>
-                                        <option value="20" selected>20 minutes</option>
-                                        <option value="30">30 minutes</option>
-                                        <option value="45">45 minutes</option>
-                                        <option value="60">1 hour</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="buffer-time">Buffer Time Between Jobs</label>
-                                    <select id="buffer-time">
-                                        <option value="0">None</option>
-                                        <option value="5">5 minutes</option>
-                                        <option value="10" selected>10 minutes</option>
-                                        <option value="15">15 minutes</option>
-                                        <option value="30">30 minutes</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VAT Settings -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>VAT</h2>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="vat-registered">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="settings-body" id="vat-settings" style="display:none;">
-                            <div class="form-group">
-                                <label for="vat-rate">VAT Rate (%)</label>
-                                <input type="number" id="vat-rate" value="20" min="0" max="100" step="0.1">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Default Job Durations -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>Default Job Durations</h2>
-                        </div>
-                        <div class="settings-body">
-                            <div class="duration-settings" id="duration-settings">
-                                <!-- Filled dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn btn-primary btn-lg" id="save-settings">Save Settings</button>
-                    </div>
-
-                    <div class="card" style="margin-top: 2rem; border: 2px solid #ef4444;">
-                        <h3 style="color: #ef4444;">Danger Zone</h3>
-                        <p style="color: #9ca3af; margin-bottom: 1rem;">Permanently delete all jobs and reset data.</p>
-                        <button class="btn" style="background: #ef4444; color: white;" id="clear-all-data">Clear All Jobs</button>
+                <div class="hero-float hero-float-2">
+                    <div class="float-icon float-icon-blue">🗺️</div>
+                    <div>
+                        <div class="float-text">Route Optimised</div>
+                        <div class="float-subtext">Saved 45 mins today</div>
                     </div>
                 </div>
-            </section>
-        </main>
-
-        <!-- Job Detail Modal -->
-        <div id="job-modal" class="modal">
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="modal-title">Job Details</h2>
-                    <button class="modal-close" onclick="app.closeModal()">&times;</button>
-                </div>
-                <div class="modal-body" id="modal-body">
-                    <!-- Filled dynamically -->
-                </div>
-                <div class="modal-footer" id="modal-footer">
-                    <button class="btn btn-outline btn-danger" id="modal-delete">Delete</button>
-                    <button class="btn btn-outline" id="modal-edit">Edit</button>
-                    <button class="btn btn-primary" id="modal-done">Mark Complete</button>
+                <div class="hero-float hero-float-3">
+                    <div class="float-icon float-icon-amber">💷</div>
+                    <div>
+                        <div class="float-text">Weekly Earnings</div>
+                        <div class="float-subtext">£2,340 this week</div>
+                    </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- Block Time Modal -->
-        <div id="block-modal" class="modal">
-            <div class="modal-overlay" onclick="app.closeBlockModal()"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="block-modal-title">Block Time</h2>
-                    <button class="modal-close" onclick="app.closeBlockModal()">&times;</button>
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-label fade-in">Features</span>
+                <h2 class="fade-in delay-1">Everything you need to<br><span class="text-gradient">run your business</span></h2>
+                <p class="section-subtitle fade-in delay-2">Purpose-built tools that save auto locksmiths hours every week. No fluff, just the features that matter.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card fade-in delay-1">
+                    <div class="feature-icon fi-purple">📅</div>
+                    <h3>Smart Calendar</h3>
+                    <p>Drag-and-drop scheduling with automatic time slot suggestions. See your whole week at a glance and never double-book again.</p>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="block-id" value="">
-                    <div class="form-group">
-                        <label for="block-label">Label</label>
-                        <input type="text" id="block-label" placeholder="e.g. Dentist, School run, Personal">
-                    </div>
-                    <div class="form-group">
-                        <label for="block-date">Date</label>
-                        <input type="date" id="block-date">
-                    </div>
-                    <div class="form-row" style="display:flex;gap:12px;">
-                        <div class="form-group" style="flex:1;">
-                            <label for="block-start">Start</label>
-                            <input type="time" id="block-start" value="09:00">
-                        </div>
-                        <div class="form-group" style="flex:1;">
-                            <label for="block-end">End</label>
-                            <input type="time" id="block-end" value="10:00">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="block-repeat">Repeat</label>
-                        <select id="block-repeat">
-                            <option value="none">No repeat</option>
-                            <option value="daily">Every day</option>
-                            <option value="weekly">Every week</option>
-                            <option value="weekdays">Every weekday (Mon-Fri)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="block-color">Colour</label>
-                        <div id="block-color-picker" style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#6b7280" checked style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#6b7280;border:3px solid transparent;"></span></label>
-                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#ef4444" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#ef4444;border:3px solid transparent;"></span></label>
-                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#f59e0b" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f59e0b;border:3px solid transparent;"></span></label>
-                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#10b981" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#10b981;border:3px solid transparent;"></span></label>
-                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#8b5cf6" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#8b5cf6;border:3px solid transparent;"></span></label>
-                        </div>
-                    </div>
+                <div class="feature-card fade-in delay-2">
+                    <div class="feature-icon fi-green">🗺️</div>
+                    <h3>Route Planning</h3>
+                    <p>Interactive map with all your day's jobs plotted. See the optimal order, travel times between jobs, and plan your day efficiently.</p>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline btn-danger" id="block-delete" style="display:none;">Delete</button>
-                    <button class="btn btn-primary" id="block-save">Save Block</button>
+                <div class="feature-card fade-in delay-3">
+                    <div class="feature-icon fi-amber">💷</div>
+                    <h3>Earnings Tracking</h3>
+                    <p>Track quotes, completed job revenue, and VAT automatically. Know exactly what you're earning this week, month, and year.</p>
+                </div>
+                <div class="feature-card fade-in delay-1">
+                    <div class="feature-icon fi-blue">🚗</div>
+                    <h3>Vehicle Lookup</h3>
+                    <p>Enter a reg plate and instantly pull vehicle details from DVLA. Save time on every call and never ask "what car is it?" again.</p>
+                </div>
+                <div class="feature-card fade-in delay-2">
+                    <div class="feature-icon fi-red">🔒</div>
+                    <h3>Multi-User & Cloud Sync</h3>
+                    <p>Secure login with your own account. All your data syncs to the cloud instantly. Access your jobs from any device, anywhere.</p>
+                </div>
+                <div class="feature-card fade-in delay-3">
+                    <div class="feature-icon fi-teal">📝</div>
+                    <h3>Quick Jotter</h3>
+                    <p>Got a callback number? A note from a customer? Jot it down instantly without leaving your schedule. Always there when you need it.</p>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- Toast Notifications -->
-        <div id="toast-container"></div>
-    </div>
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-label fade-in">How It Works</span>
+                <h2 class="fade-in delay-1">Up and running in <span class="text-gradient">3 minutes</span></h2>
+                <p class="section-subtitle fade-in delay-2">No complicated setup. No training needed. Just sign up and start scheduling.</p>
+            </div>
 
-    <script src="supabase-config.js" defer></script>
-    <script src="app.js" defer></script>
+            <div class="steps">
+                <div class="step fade-in delay-1">
+                    <div class="step-number">1</div>
+                    <h3>Create Your Account</h3>
+                    <p>Sign up with your email. Your secure workspace is ready in seconds.</p>
+                </div>
+                <div class="step fade-in delay-2">
+                    <div class="step-number">2</div>
+                    <h3>Add Your Jobs</h3>
+                    <p>Enter your bookings with customer details, postcodes, and job types. The calendar does the rest.</p>
+                </div>
+                <div class="step fade-in delay-3">
+                    <div class="step-number">3</div>
+                    <h3>Hit the Road</h3>
+                    <p>View your optimised route, track earnings, and manage your day like a pro from any device.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase -->
+    <section class="showcase">
+        <div class="container" style="position:relative;">
+            <div class="text-center">
+                <span class="section-label fade-in" style="background:rgba(129,140,248,0.15);">Why Locksmiths Love It</span>
+                <h2 class="fade-in delay-1">Built by locksmiths,<br>for locksmiths</h2>
+                <p class="section-subtitle fade-in delay-2">We understand the unique challenges of mobile auto locksmithing. Every feature was designed with your daily workflow in mind.</p>
+            </div>
+
+            <div class="showcase-grid">
+                <div class="showcase-hero-img fade-in">
+                    <img src="https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1200&h=600&fit=crop&crop=center" alt="Auto locksmith working on car">
+                    <div class="showcase-hero-img-overlay">
+                        <h3>Your business, supercharged</h3>
+                        <p>From emergency lockouts to key programming — manage it all from one dashboard</p>
+                    </div>
+                </div>
+                <div class="showcase-item fade-in delay-1">
+                    <div class="showcase-item-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Book a job in under 30 seconds. No pages to load, no apps to download. Works instantly in your browser on phone, tablet, or laptop.</p>
+                    <span class="showcase-item-tag">Web-based PWA</span>
+                </div>
+                <div class="showcase-item fade-in delay-2">
+                    <div class="showcase-item-icon">📱</div>
+                    <h3>Works Everywhere</h3>
+                    <p>In the van, at the workshop, or on a callout. Your schedule syncs in real-time across every device. Always up to date.</p>
+                    <span class="showcase-item-tag">Real-time sync</span>
+                </div>
+                <div class="showcase-item fade-in delay-3">
+                    <div class="showcase-item-icon">🧠</div>
+                    <h3>Smart Suggestions</h3>
+                    <p>LockRoute suggests the best available time slots based on your location, travel time, lunch breaks, and existing bookings.</p>
+                    <span class="showcase-item-tag">AI-powered</span>
+                </div>
+                <div class="showcase-item fade-in delay-4">
+                    <div class="showcase-item-icon">🛡️</div>
+                    <h3>Secure & Private</h3>
+                    <p>Bank-grade encryption. Your customer data is yours alone — isolated per account with row-level security. No one else can see it.</p>
+                    <span class="showcase-item-tag">Enterprise security</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-label fade-in">Pricing</span>
+                <h2 class="fade-in delay-1">Simple, honest pricing</h2>
+                <p class="section-subtitle fade-in delay-2">One plan. Everything included. No hidden fees, no per-job charges, no feature gates.</p>
+            </div>
+
+            <div class="pricing-card fade-in delay-2">
+                <div class="pricing-popular">Most Popular</div>
+                <div class="pricing-header">
+                    <h3>LockRoute Pro</h3>
+                    <p>Everything you need to manage your locksmith business</p>
+                    <div class="pricing-amount">
+                        <span class="pricing-currency">£</span>
+                        <span class="pricing-value">10</span>
+                        <span class="pricing-period">/month</span>
+                    </div>
+                </div>
+                <div class="pricing-body">
+                    <ul class="pricing-features">
+                        <li><span class="pricing-check">✓</span> Unlimited jobs & scheduling</li>
+                        <li><span class="pricing-check">✓</span> Drag-and-drop calendar</li>
+                        <li><span class="pricing-check">✓</span> Interactive route planning with maps</li>
+                        <li><span class="pricing-check">✓</span> Smart time slot suggestions</li>
+                        <li><span class="pricing-check">✓</span> Vehicle reg lookup (DVLA)</li>
+                        <li><span class="pricing-check">✓</span> Earnings & VAT tracking</li>
+                        <li><span class="pricing-check">✓</span> Cloud sync across all devices</li>
+                        <li><span class="pricing-check">✓</span> Secure multi-user accounts</li>
+                        <li><span class="pricing-check">✓</span> Quick jotter & notes</li>
+                        <li><span class="pricing-check">✓</span> Priority support</li>
+                    </ul>
+                    <a href="app.html" class="btn btn-accent pricing-cta">Start Free Trial</a>
+                    <p class="pricing-guarantee">🔒 14-day free trial. Cancel anytime. No card required.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-label fade-in">Testimonials</span>
+                <h2 class="fade-in delay-1">Trusted by locksmiths <span class="text-gradient">across the UK</span></h2>
+            </div>
+
+            <div class="testimonials-grid">
+                <div class="testimonial-card fade-in delay-1">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"I used to spend 20 minutes every morning planning my route on Google Maps. Now I just open LockRoute and my whole day is laid out. Absolute game changer."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">MK</div>
+                        <div>
+                            <div class="testimonial-name">Mike K.</div>
+                            <div class="testimonial-role">Auto Locksmith, Bristol</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card fade-in delay-2">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"The vehicle lookup alone saves me 5 minutes per call. Multiply that by 6 jobs a day and it pays for itself instantly. Brilliant tool."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">SJ</div>
+                        <div>
+                            <div class="testimonial-name">Sarah J.</div>
+                            <div class="testimonial-role">Mobile Locksmith, Manchester</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card fade-in delay-3">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="testimonial-text">"Finally, software that actually understands what mobile locksmiths need. Not some generic scheduling app — this was built for us. Love the smart slot suggestions."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">DT</div>
+                        <div>
+                            <div class="testimonial-name">Dave T.</div>
+                            <div class="testimonial-role">Auto Locksmith, London</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content fade-in">
+                <h2>Ready to take control of your schedule?</h2>
+                <p>Join hundreds of auto locksmiths who save hours every week with LockRoute Pro.</p>
+                <a href="app.html" class="btn btn-accent">Start Your Free Trial</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="nav-logo">
+                        <div class="nav-logo-icon">🔑</div>
+                        LockRoute Pro
+                    </div>
+                    <p>The smart scheduling and route planning app built specifically for mobile auto locksmiths across the UK.</p>
+                </div>
+                <div>
+                    <h4>Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Centre</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Feature Requests</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 LockRoute Pro. All rights reserved. Made with 🔑 for locksmiths.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll Animation Script -->
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
 </body>
 </html>

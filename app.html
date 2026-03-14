@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>LockRoute Pro - Auto Locksmith Scheduling</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js" defer></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+</head>
+<body>
+    <!-- Auth Screen (shown when not logged in) -->
+    <div id="auth-screen" style="display:none;">
+        <div class="auth-container">
+            <div class="auth-header">
+                <span style="font-size:2.5rem;">🔑</span>
+                <h1>LockRoute Pro</h1>
+                <p class="auth-subtitle">Auto Locksmith Scheduling</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Your password" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+            </form>
+
+            <form id="signup-form" style="display:none;">
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required placeholder="Min 6 characters" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm">Confirm Password</label>
+                    <input type="password" id="signup-confirm" required placeholder="Repeat password" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+
+            <p id="auth-error" class="auth-error"></p>
+
+            <p id="auth-toggle" class="auth-toggle">
+                Don't have an account? <a href="#" id="auth-toggle-link">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="app" style="display:none;">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🔑</span>
+                    <span class="logo-text">LockRoute Pro</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li class="nav-item active" data-view="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </li>
+                <li class="nav-item" data-view="calendar">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Calendar</span>
+                </li>
+                <li class="nav-item" data-view="add-job">
+                    <span class="nav-icon">➕</span>
+                    <span class="nav-label">New Job</span>
+                </li>
+                <li class="nav-item" data-view="route">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Route Planner</span>
+                </li>
+                <li class="nav-item" data-view="jotter">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">Jotter</span>
+                </li>
+                <li class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span id="user-email" class="user-email"></span>
+                    <button class="btn btn-outline btn-sm" onclick="app.logout()">Log Out</button>
+                </div>
+                <div class="quick-stats">
+                    <div class="stat">
+                        <span class="stat-number" id="today-jobs-count">0</span>
+                        <span class="stat-label">Today</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="week-jobs-count">0</span>
+                        <span class="stat-label">This Week</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Header -->
+        <header id="mobile-header">
+            <button id="menu-toggle" class="icon-btn">☰</button>
+            <span class="mobile-title">LockRoute Pro</span>
+            <button id="quick-add-btn" class="icon-btn">➕</button>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- DASHBOARD VIEW -->
+            <section id="view-dashboard" class="view active">
+                <div class="view-header">
+                    <h1>Dashboard</h1>
+                    <div class="header-actions">
+                        <span id="dashboard-date" class="date-display"></span>
+                        <button class="btn btn-primary" onclick="app.showView('add-job')">+ New Job</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Today's Schedule -->
+                    <div class="card today-schedule">
+                        <div class="card-header">
+                            <h2>Today's Schedule</h2>
+                            <span class="badge" id="today-badge">0 jobs</span>
+                        </div>
+                        <div class="timeline" id="today-timeline">
+                            <div class="empty-state">
+                                <span class="empty-icon">📋</span>
+                                <p>No jobs scheduled for today</p>
+                                <button class="btn btn-outline" onclick="app.showView('add-job')">Schedule a job</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Jobs -->
+                    <div class="card upcoming-jobs">
+                        <div class="card-header">
+                            <h2>Upcoming Jobs</h2>
+                        </div>
+                        <div id="upcoming-list">
+                            <div class="empty-state">
+                                <span class="empty-icon">📅</span>
+                                <p>No upcoming jobs</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Available Slot -->
+                    <div class="card next-slot">
+                        <div class="card-header">
+                            <h2>Next Available Slot</h2>
+                        </div>
+                        <div id="next-slot-info" class="slot-display">
+                            <span class="slot-time">--</span>
+                            <span class="slot-detail">No schedule set up yet</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="card stats-card">
+                        <div class="card-header">
+                            <h2>This Week</h2>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-total-jobs">0</span>
+                                <span class="stat-desc">Total Jobs</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-hours-booked">0h</span>
+                                <span class="stat-desc">Hours Booked</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-areas">0</span>
+                                <span class="stat-desc">Areas Covered</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-free-slots">0</span>
+                                <span class="stat-desc">Free Slots</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Earnings -->
+                    <div class="card earnings-card">
+                        <div class="card-header">
+                            <h2>Earnings</h2>
+                        </div>
+                        <div class="stats-grid stats-grid-2">
+                            <div class="stat-item">
+                                <span class="stat-value stat-value-earnings" id="stat-earnings-week">£0</span>
+                                <span class="stat-desc">This Week</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value stat-value-earnings" id="stat-earnings-upcoming">£0</span>
+                                <span class="stat-desc">All Upcoming</span>
+                            </div>
+                        </div>
+                        <div id="vat-earnings-breakdown" class="vat-earnings-breakdown" style="display:none;">
+                            <div class="vat-earnings-row">
+                                <span>Net: <strong id="stat-earnings-net">£0</strong></span>
+                                <span>VAT: <strong id="stat-earnings-vat">£0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALENDAR VIEW -->
+            <section id="view-calendar" class="view">
+                <div class="view-header">
+                    <h1>Calendar</h1>
+                    <div class="header-actions">
+                        <div class="calendar-nav">
+                            <button class="btn btn-icon" id="cal-prev">◀</button>
+                            <span id="cal-title" class="cal-title">March 2026</span>
+                            <button class="btn btn-icon" id="cal-next">▶</button>
+                        </div>
+                        <button class="btn btn-outline" id="add-block-btn" style="font-size:13px;">+ Block Time</button>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-cal-view="week">Week</button>
+                            <button class="toggle-btn" data-cal-view="day">Day</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Week View -->
+                <div id="calendar-week" class="calendar-container">
+                    <div class="cal-header-row" id="cal-day-headers"></div>
+                    <div class="cal-body">
+                        <div class="cal-times" id="cal-times"></div>
+                        <div class="cal-grid" id="cal-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Day View -->
+                <div id="calendar-day" class="calendar-container" style="display:none;">
+                    <div class="day-view-header" id="day-view-header"></div>
+                    <div class="day-schedule" id="day-schedule"></div>
+                </div>
+            </section>
+
+            <!-- ADD JOB VIEW -->
+            <section id="view-add-job" class="view">
+                <div class="view-header">
+                    <h1 id="job-form-title">New Job</h1>
+                </div>
+
+                <div class="form-container">
+                    <form id="job-form" class="job-form">
+                        <input type="hidden" id="job-id" value="">
+
+                        <!-- Step 1: Where? -->
+                        <div class="form-section">
+                            <h3><span class="step-num">1</span> Where are they?</h3>
+                            <div class="form-group">
+                                <label for="job-postcode">Postcode <span class="required">*</span></label>
+                                <input type="text" id="job-postcode" placeholder="e.g. SW1A 1AA" required
+                                       class="postcode-input" maxlength="8" autocomplete="off">
+                                <span class="input-hint" id="postcode-hint"></span>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: What? -->
+                        <div class="form-section">
+                            <h3><span class="step-num">2</span> What do they need?</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="job-type">Job Type <span class="required">*</span></label>
+                                    <select id="job-type" required>
+                                        <option value="">Select job type...</option>
+                                        <!-- Populated dynamically from JS -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-duration">Duration</label>
+                                    <select id="job-duration">
+                                        <option value="30">30 min</option>
+                                        <option value="45">45 min</option>
+                                        <option value="60" selected>1 hr</option>
+                                        <option value="90">1.5 hr</option>
+                                        <option value="120">2 hr</option>
+                                        <option value="180">3 hr</option>
+                                        <option value="240">4 hr</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="hidden" name="priority" value="normal">
+                            <div class="form-group">
+                                <label for="job-reg">Vehicle Reg</label>
+                                <div class="reg-input-row">
+                                    <input type="text" id="job-reg" placeholder="e.g. AB12 CDE" maxlength="8" autocomplete="off" class="reg-input" style="text-transform:uppercase;">
+                                    <button type="button" class="btn btn-outline btn-sm" id="lookup-reg-btn">Look up</button>
+                                </div>
+                                <div id="vehicle-info" class="vehicle-info" style="display:none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: When? -->
+                        <div class="form-section">
+                            <h3><span class="step-num">3</span> When?</h3>
+
+                            <!-- Smart Suggestions (above manual inputs — most common action) -->
+                            <div class="suggestions-box" id="suggestions-box">
+                                <h4>Suggested slots based on location</h4>
+                                <div id="suggestions-list" class="suggestions-list">
+                                    <!-- Filled dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="or-divider"><span>or pick manually</span></div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="job-date">Date <span class="required">*</span></label>
+                                    <input type="date" id="job-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="job-time">Time <span class="required">*</span></label>
+                                    <input type="time" id="job-time" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Who? (confirm details) -->
+                        <div class="form-section">
+                            <h3><span class="step-num">4</span> Customer details</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customer-name">Name</label>
+                                    <input type="text" id="customer-name" placeholder="e.g. John Smith">
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer-phone">Phone</label>
+                                    <input type="tel" id="customer-phone" placeholder="e.g. 07700 900000">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="job-address">Address</label>
+                                    <input type="text" id="job-address" placeholder="e.g. 10 Downing Street">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="job-notes">Notes</label>
+                                <textarea id="job-notes" rows="2" placeholder="e.g. Ford Focus 2019, blue, in the car park..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="job-price">Price Quoted</label>
+                                <div class="price-input-row">
+                                    <span class="price-prefix">£</span>
+                                    <input type="number" id="job-price" placeholder="e.g. 120.00" min="0" step="0.01" class="price-input">
+                                </div>
+                                <div id="vat-breakdown" class="vat-breakdown" style="display:none;">
+                                    <span id="vat-breakdown-text"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="app.resetJobForm()">Clear</button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <span id="form-submit-text">Schedule Job</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ROUTE PLANNER VIEW -->
+            <section id="view-route" class="view">
+                <div class="view-header">
+                    <h1>Route Planner</h1>
+                    <div class="route-day-nav">
+                        <button class="btn btn-route-nav" id="route-prev-day">◀ Previous Day</button>
+                        <input type="date" id="route-date" class="date-input">
+                        <button class="btn btn-route-nav" id="route-next-day">Next Day ▶</button>
+                    </div>
+                </div>
+
+                <div class="route-map-container" id="route-map-container" style="display:none;">
+                    <div id="route-map" class="route-map"></div>
+                </div>
+
+                <div class="route-container">
+                    <div class="route-list" id="route-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">🗺️</span>
+                            <p>Select a date to see your route</p>
+                        </div>
+                    </div>
+                    <div class="route-summary" id="route-summary">
+                        <div class="summary-card">
+                            <h3>Route Summary</h3>
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="summary-label">Total Jobs</span>
+                                    <span class="summary-value" id="route-total-jobs">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Est. Travel Time</span>
+                                    <span class="summary-value" id="route-travel-time">0 min</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Est. Working Time</span>
+                                    <span class="summary-value" id="route-work-time">0h</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Start</span>
+                                    <span class="summary-value" id="route-start-time">--:--</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Finish</span>
+                                    <span class="summary-value" id="route-end-time">--:--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- JOTTER VIEW -->
+            <section id="view-jotter" class="view">
+                <div class="view-header">
+                    <h1>Jotter</h1>
+                </div>
+                <div class="jotter-container">
+                    <div class="card jotter-add-card">
+                        <textarea id="jotter-input" rows="3" placeholder="Write a note..."></textarea>
+                        <button class="btn btn-primary" id="jotter-add-btn">Add Note</button>
+                    </div>
+                    <div id="jotter-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">📝</span>
+                            <p>No notes yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS VIEW -->
+            <section id="view-settings" class="view">
+                <div class="view-header">
+                    <h1>Settings</h1>
+                </div>
+
+                <div class="settings-container">
+                    <!-- Working Hours -->
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2>Working Hours</h2>
+                        </div>
+                        <div class="settings-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="work-start">Start Time</label>
+                                    <input type="time" id="work-start" value="08:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="work-end">End Time</label>
+                                    <input type="time" id="work-end" value="18:00">
+                                </div>
+                            </div>
+
+                            <h3>Working Days</h3>
+                            <div class="day-toggles" id="working-days">
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="0">
+                                    <span>Sun</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="1" checked>
+                                    <span>Mon</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="2" checked>
+                                    <span>Tue</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="3" checked>
+                                    <span>Wed</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="4" checked>
+                                    <span>Thu</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="5" checked>
+                                    <span>Fri</span>
+                                </label>
+                                <label class="day-toggle">
+                                    <input type="checkbox" data-day="6">
+                                    <span>Sat</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lunch Break -->
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2>Lunch Break</h2>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="lunch-enabled" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-body" id="lunch-settings">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="lunch-start">Lunch Start</label>
+                                    <input type="time" id="lunch-start" value="12:30">
+                                </div>
+                                <div class="form-group">
+                                    <label for="lunch-duration">Duration</label>
+                                    <select id="lunch-duration">
+                                        <option value="30">30 minutes</option>
+                                        <option value="45">45 minutes</option>
+                                        <option value="60" selected>1 hour</option>
+                                        <option value="90">1.5 hours</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Travel Settings -->
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2>Travel & Routing</h2>
+                        </div>
+                        <div class="settings-body">
+                            <div class="form-group">
+                                <label for="home-postcode">Home/Base Postcode</label>
+                                <input type="text" id="home-postcode" placeholder="e.g. SW1A 1AA" maxlength="8">
+                                <span class="input-hint">Used to calculate travel from your base</span>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="default-travel">Default Travel Time Between Jobs</label>
+                                    <select id="default-travel">
+                                        <option value="10">10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="20" selected>20 minutes</option>
+                                        <option value="30">30 minutes</option>
+                                        <option value="45">45 minutes</option>
+                                        <option value="60">1 hour</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="buffer-time">Buffer Time Between Jobs</label>
+                                    <select id="buffer-time">
+                                        <option value="0">None</option>
+                                        <option value="5">5 minutes</option>
+                                        <option value="10" selected>10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="30">30 minutes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VAT Settings -->
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2>VAT</h2>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="vat-registered">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-body" id="vat-settings" style="display:none;">
+                            <div class="form-group">
+                                <label for="vat-rate">VAT Rate (%)</label>
+                                <input type="number" id="vat-rate" value="20" min="0" max="100" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Default Job Durations -->
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2>Default Job Durations</h2>
+                        </div>
+                        <div class="settings-body">
+                            <div class="duration-settings" id="duration-settings">
+                                <!-- Filled dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary btn-lg" id="save-settings">Save Settings</button>
+                    </div>
+
+                    <div class="card" style="margin-top: 2rem; border: 2px solid #ef4444;">
+                        <h3 style="color: #ef4444;">Danger Zone</h3>
+                        <p style="color: #9ca3af; margin-bottom: 1rem;">Permanently delete all jobs and reset data.</p>
+                        <button class="btn" style="background: #ef4444; color: white;" id="clear-all-data">Clear All Jobs</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Job Detail Modal -->
+        <div id="job-modal" class="modal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Job Details</h2>
+                    <button class="modal-close" onclick="app.closeModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Filled dynamically -->
+                </div>
+                <div class="modal-footer" id="modal-footer">
+                    <button class="btn btn-outline btn-danger" id="modal-delete">Delete</button>
+                    <button class="btn btn-outline" id="modal-edit">Edit</button>
+                    <button class="btn btn-primary" id="modal-done">Mark Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Block Time Modal -->
+        <div id="block-modal" class="modal">
+            <div class="modal-overlay" onclick="app.closeBlockModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="block-modal-title">Block Time</h2>
+                    <button class="modal-close" onclick="app.closeBlockModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="block-id" value="">
+                    <div class="form-group">
+                        <label for="block-label">Label</label>
+                        <input type="text" id="block-label" placeholder="e.g. Dentist, School run, Personal">
+                    </div>
+                    <div class="form-group">
+                        <label for="block-date">Date</label>
+                        <input type="date" id="block-date">
+                    </div>
+                    <div class="form-row" style="display:flex;gap:12px;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="block-start">Start</label>
+                            <input type="time" id="block-start" value="09:00">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="block-end">End</label>
+                            <input type="time" id="block-end" value="10:00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="block-repeat">Repeat</label>
+                        <select id="block-repeat">
+                            <option value="none">No repeat</option>
+                            <option value="daily">Every day</option>
+                            <option value="weekly">Every week</option>
+                            <option value="weekdays">Every weekday (Mon-Fri)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="block-color">Colour</label>
+                        <div id="block-color-picker" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#6b7280" checked style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#6b7280;border:3px solid transparent;"></span></label>
+                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#ef4444" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#ef4444;border:3px solid transparent;"></span></label>
+                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#f59e0b" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f59e0b;border:3px solid transparent;"></span></label>
+                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#10b981" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#10b981;border:3px solid transparent;"></span></label>
+                            <label style="cursor:pointer;"><input type="radio" name="block-color" value="#8b5cf6" style="display:none;"><span class="color-dot" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#8b5cf6;border:3px solid transparent;"></span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline btn-danger" id="block-delete" style="display:none;">Delete</button>
+                    <button class="btn btn-primary" id="block-save">Save Block</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+    </div>
+
+    <script src="supabase-config.js" defer></script>
+    <script src="app.js" defer></script>
+</body>
+</html>
