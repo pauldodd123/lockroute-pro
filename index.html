@@ -15,12 +15,56 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js" defer></script>
 
-    <!-- Firebase SDK (loaded async so it doesn't block page render) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 </head>
 <body>
-    <div id="app">
+    <!-- Auth Screen (shown when not logged in) -->
+    <div id="auth-screen" style="display:none;">
+        <div class="auth-container">
+            <div class="auth-header">
+                <span style="font-size:2.5rem;">🔑</span>
+                <h1>LockRoute Pro</h1>
+                <p class="auth-subtitle">Auto Locksmith Scheduling</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Your password" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+            </form>
+
+            <form id="signup-form" style="display:none;">
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required placeholder="Min 6 characters" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm">Confirm Password</label>
+                    <input type="password" id="signup-confirm" required placeholder="Repeat password" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+
+            <p id="auth-error" class="auth-error"></p>
+
+            <p id="auth-toggle" class="auth-toggle">
+                Don't have an account? <a href="#" id="auth-toggle-link">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="app" style="display:none;">
         <!-- Sidebar Navigation -->
         <nav id="sidebar">
             <div class="sidebar-header">
@@ -56,6 +100,10 @@
                 </li>
             </ul>
             <div class="sidebar-footer">
+                <div class="user-info">
+                    <span id="user-email" class="user-email"></span>
+                    <button class="btn btn-outline btn-sm" onclick="app.logout()">Log Out</button>
+                </div>
                 <div class="quick-stats">
                     <div class="stat">
                         <span class="stat-number" id="today-jobs-count">0</span>
@@ -654,7 +702,7 @@
         <div id="toast-container"></div>
     </div>
 
-    <script src="firebase-config.js" defer></script>
+    <script src="supabase-config.js" defer></script>
     <script src="app.js" defer></script>
 </body>
 </html>

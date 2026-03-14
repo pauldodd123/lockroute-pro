@@ -192,24 +192,24 @@ const app = {
             console.error('Error loading from localStorage:', e);
         }
 
-        // Then sync from Firestore (async, cloud data takes priority)
+        // Then sync from Supabase (async, cloud data takes priority)
         this.loadFromCloud();
     },
 
     async loadFromCloud() {
-        if (typeof cloudDB === 'undefined' || !firebaseReady) return;
+        if (typeof cloudDB === 'undefined' || !supabaseReady) return;
 
         try {
             // Timeout after 5 seconds so app never hangs
             const timeout = ms => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
 
-            // If we have localStorage data but Firestore is empty, migrate it
+            // If we have localStorage data but Supabase is empty, migrate it
             if (this.jobs.length > 0) {
-                await Promise.race([cloudDB.migrateFromLocalStorage(this.jobs, this.settings), timeout(5000)]);
+                await Promise.race([cloudDB.migrateFromLocalStorage(this.jobs, this.settings, this.timeBlocks, this.jotterNotes), timeout(5000)]);
             }
 
-            const [cloudJobs, cloudSettings] = await Promise.race([
-                Promise.all([cloudDB.loadJobs(), cloudDB.loadSettings()]),
+            const [cloudJobs, cloudSettings, cloudJotter, cloudBlocks] = await Promise.race([
+                Promise.all([cloudDB.loadJobs(), cloudDB.loadSettings(), cloudDB.loadJotter(), cloudDB.loadBlocks()]),
                 timeout(5000)
             ]);
 
@@ -221,6 +221,16 @@ const app = {
             if (cloudSettings !== null) {
                 this.settings = { ...this.settings, ...cloudSettings };
                 localStorage.setItem('lockroute_settings', JSON.stringify(this.settings));
+            }
+
+            if (cloudJotter !== null && cloudJotter.length > 0) {
+                this.jotterNotes = cloudJotter;
+                localStorage.setItem('lockroute_jotter', JSON.stringify(this.jotterNotes));
+            }
+
+            if (cloudBlocks !== null && cloudBlocks.length > 0) {
+                this.timeBlocks = cloudBlocks;
+                localStorage.setItem('lockroute_blocks', JSON.stringify(this.timeBlocks));
             }
 
             // Re-render with cloud data
@@ -243,24 +253,25 @@ const app = {
             console.error('Error saving to localStorage:', e);
         }
 
-        // Also sync to Firestore
-        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+        // Also sync to Supabase
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
             cloudDB.saveAllJobs(this.jobs);
             cloudDB.saveSettings(this.settings);
+            cloudDB.saveAllBlocks(this.timeBlocks);
         }
     },
 
     // Targeted save for single job operations (more efficient than full sync)
     persistJob(job) {
         localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
-        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
             cloudDB.saveJob(job);
         }
     },
 
     removeJob(id) {
         localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
-        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
             cloudDB.deleteJob(id);
         }
     },
@@ -2218,16 +2229,19 @@ const app = {
         this.toast('Settings saved!', 'success');
     },
 
+    logout() {
+        if (typeof auth !== 'undefined') auth.signOut();
+        this.jobs = [];
+        this.timeBlocks = [];
+        this.jotterNotes = [];
+    },
+
     clearAllJobs() {
         if (!confirm('Are you sure you want to delete ALL jobs? This cannot be undone.')) return;
 
-        // Clear Firestore jobs
-        if (typeof cloudDB !== 'undefined' && firebaseReady) {
-            db.collection('jobs').get().then(snapshot => {
-                const batch = db.batch();
-                snapshot.docs.forEach(doc => batch.delete(doc.ref));
-                return batch.commit();
-            }).catch(e => console.error('Error clearing Firestore:', e));
+        // Clear Supabase data
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
+            cloudDB.clearAll();
         }
 
         // Clear local
@@ -2396,7 +2410,7 @@ const app = {
 
     persistJotter() {
         localStorage.setItem('lockroute_jotter', JSON.stringify(this.jotterNotes));
-        if (typeof cloudDB !== 'undefined' && firebaseReady && typeof cloudDB.saveJotter === 'function') {
+        if (typeof cloudDB !== 'undefined' && supabaseReady && typeof cloudDB.saveJotter === 'function') {
             cloudDB.saveJotter(this.jotterNotes);
         }
     },
@@ -2500,4 +2514,4 @@ const app = {
 };
 
 // ---- Initialize ----
-document.addEventListener('DOMContentLoaded', () => app.init());
+// Init is now called by supabase-config.js after auth succeeds
