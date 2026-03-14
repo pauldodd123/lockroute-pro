@@ -907,6 +907,23 @@ const app = {
         const slots = [];
         let cursor = workStart;
 
+        // Account for travel from home to first job location
+        if (newPostcode && this.settings.homePostcode) {
+            const travelFromHome = this.estimateTravelMinutes(this.settings.homePostcode, newPostcode);
+            cursor = Math.max(cursor, workStart + travelFromHome);
+        }
+
+        // If today, don't suggest slots in the past (+ travel from home)
+        const today = this.todayStr();
+        if (dateStr === today) {
+            const now = new Date();
+            let earliestMinutes = now.getHours() * 60 + now.getMinutes() + 15; // 15 min buffer
+            if (this.settings.homePostcode && newPostcode) {
+                earliestMinutes += this.estimateTravelMinutes(this.settings.homePostcode, newPostcode);
+            }
+            cursor = Math.max(cursor, earliestMinutes);
+        }
+
         for (const block of merged) {
             const gapStart = Math.max(cursor, workStart);
             const gapEnd = block.start + durationMins; // block.start is already offset by duration
