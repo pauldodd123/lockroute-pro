@@ -46,6 +46,10 @@
                     <span class="nav-icon">🗺️</span>
                     <span class="nav-label">Route Planner</span>
                 </li>
+                <li class="nav-item" data-view="jotter">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">Jotter</span>
+                </li>
                 <li class="nav-item" data-view="settings">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Settings</span>
@@ -145,6 +149,23 @@
                             <div class="stat-item">
                                 <span class="stat-value" id="stat-free-slots">0</span>
                                 <span class="stat-desc">Free Slots</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Earnings -->
+                    <div class="card earnings-card">
+                        <div class="card-header">
+                            <h2>Earnings</h2>
+                        </div>
+                        <div class="stats-grid stats-grid-2">
+                            <div class="stat-item">
+                                <span class="stat-value stat-value-earnings" id="stat-earnings-week">£0</span>
+                                <span class="stat-desc">This Week</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value stat-value-earnings" id="stat-earnings-upcoming">£0</span>
+                                <span class="stat-desc">All Upcoming</span>
                             </div>
                         </div>
                     </div>
@@ -290,6 +311,13 @@
                                 <label for="job-notes">Notes</label>
                                 <textarea id="job-notes" rows="2" placeholder="e.g. Ford Focus 2019, blue, in the car park..."></textarea>
                             </div>
+                            <div class="form-group">
+                                <label for="job-price">Price Quoted</label>
+                                <div class="price-input-row">
+                                    <span class="price-prefix">£</span>
+                                    <input type="number" id="job-price" placeholder="e.g. 120.00" min="0" step="0.01" class="price-input">
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Form Actions -->
@@ -350,6 +378,25 @@
                                     <span class="summary-value" id="route-end-time">--:--</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- JOTTER VIEW -->
+            <section id="view-jotter" class="view">
+                <div class="view-header">
+                    <h1>Jotter</h1>
+                </div>
+                <div class="jotter-container">
+                    <div class="card jotter-add-card">
+                        <textarea id="jotter-input" rows="3" placeholder="Write a note..."></textarea>
+                        <button class="btn btn-primary" id="jotter-add-btn">Add Note</button>
+                    </div>
+                    <div id="jotter-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">📝</span>
+                            <p>No notes yet</p>
                         </div>
                     </div>
                 </div>

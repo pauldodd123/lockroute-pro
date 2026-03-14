@@ -110,6 +110,7 @@ async function geocodePostcode(postcode) {
 const app = {
     jobs: [],
     timeBlocks: [],
+    jotterNotes: [],
     settings: {
         workStart: '08:00',
         workEnd: '18:00',
@@ -182,6 +183,9 @@ const app = {
             if (savedSettings) {
                 this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
             }
+
+            const savedJotter = localStorage.getItem('lockroute_jotter');
+            if (savedJotter) this.jotterNotes = JSON.parse(savedJotter);
         } catch (e) {
             console.error('Error loading from localStorage:', e);
         }
@@ -316,6 +320,12 @@ const app = {
             e.target.value = e.target.value.toUpperCase();
         });
 
+        // Jotter
+        document.getElementById('jotter-add-btn').addEventListener('click', () => this.addJotterNote());
+        document.getElementById('jotter-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) this.addJotterNote();
+        });
+
         // Date change triggers suggestions
         document.getElementById('job-date').addEventListener('change', () => {
             this.generateSuggestions();
@@ -410,6 +420,7 @@ const app = {
                 document.getElementById('route-date').value = this.todayStr();
                 this.renderRoute(this.todayStr());
                 break;
+            case 'jotter': this.renderJotter(); break;
             case 'settings': this.renderSettings(); break;
         }
     },
@@ -602,6 +613,7 @@ const app = {
             notes: document.getElementById('job-notes').value.trim(),
             vehicleReg: document.getElementById('job-reg').value.trim().toUpperCase(),
             vehicleInfo: this._lastVehicleInfo || null,
+            priceQuoted: parseFloat(document.getElementById('job-price').value) || 0,
             date: document.getElementById('job-date').value,
             time: document.getElementById('job-time').value,
             priority: (document.querySelector('input[name="priority"]')?.value) || 'normal',
@@ -670,6 +682,7 @@ const app = {
         if (priorityRadio) priorityRadio.checked = true;
 
         document.getElementById('job-reg').value = job.vehicleReg || '';
+        document.getElementById('job-price').value = job.priceQuoted || '';
         this._lastVehicleInfo = job.vehicleInfo || null;
         const vInfo = document.getElementById('vehicle-info');
         if (job.vehicleInfo) {
@@ -689,6 +702,7 @@ const app = {
         document.getElementById('form-submit-text').textContent = 'Schedule Job';
         document.getElementById('postcode-hint').textContent = '';
         document.getElementById('job-reg').value = '';
+        document.getElementById('job-price').value = '';
         document.getElementById('vehicle-info').style.display = 'none';
         this._lastVehicleInfo = null;
         this.setDefaultDates();
@@ -1096,6 +1110,7 @@ const app = {
         this.renderUpcoming();
         this.renderNextSlot();
         this.renderWeekStats();
+        this.renderEarnings();
     },
 
     renderTodayTimeline(dateStr) {
@@ -1292,6 +1307,22 @@ const app = {
         document.getElementById('stat-hours-booked').textContent = `${Math.round(totalMinutes / 60)}h`;
         document.getElementById('stat-areas').textContent = areas.size;
         document.getElementById('stat-free-slots').textContent = freeSlots;
+    },
+
+    renderEarnings() {
+        const today = this.todayStr();
+        const weekDates = this.getWeekDates(new Date());
+
+        const weekEarnings = this.jobs
+            .filter(j => weekDates.includes(j.date) && j.status !== 'cancelled')
+            .reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+
+        const upcomingEarnings = this.jobs
+            .filter(j => j.date >= today && j.status === 'scheduled')
+            .reduce((sum, j) => sum + (parseFloat(j.priceQuoted) || 0), 0);
+
+        document.getElementById('stat-earnings-week').textContent = weekEarnings > 0 ? `£${weekEarnings.toFixed(0)}` : '£0';
+        document.getElementById('stat-earnings-upcoming').textContent = upcomingEarnings > 0 ? `£${upcomingEarnings.toFixed(0)}` : '£0';
     },
 
     // ---- Calendar ----
@@ -2028,6 +2059,14 @@ const app = {
                 <span class="modal-detail-label">Location</span>
                 <span class="modal-detail-value">${job.postcode}${job.address ? ' - ' + job.address : ''}</span>
             </div>
+            ${job.vehicleReg ? `<div class="modal-detail-row">
+                <span class="modal-detail-label">Vehicle Reg</span>
+                <span class="modal-detail-value">${job.vehicleReg}</span>
+            </div>` : ''}
+            ${job.priceQuoted ? `<div class="modal-detail-row">
+                <span class="modal-detail-label">Price Quoted</span>
+                <span class="modal-detail-value"><strong>£${parseFloat(job.priceQuoted).toFixed(2)}</strong></span>
+            </div>` : ''}
             ${job.notes ? `<div class="modal-notes"><strong>Notes:</strong> ${job.notes}</div>` : ''}
         `;
 
@@ -2141,8 +2180,10 @@ const app = {
         // Clear local
         this.jobs = [];
         this.timeBlocks = [];
+        this.jotterNotes = [];
         localStorage.removeItem('lockroute_jobs');
         localStorage.removeItem('lockroute_blocks');
+        localStorage.removeItem('lockroute_jotter');
         this.saveData();
         this.updateQuickStats();
         this.renderDashboard();
@@ -2250,6 +2291,74 @@ const app = {
 
         document.getElementById('today-jobs-count').textContent = todayJobs;
         document.getElementById('week-jobs-count').textContent = weekJobs;
+    },
+
+    // ---- Jotter ----
+    addJotterNote() {
+        const input = document.getElementById('jotter-input');
+        const text = input.value.trim();
+        if (!text) {
+            this.toast('Write something first', 'error');
+            return;
+        }
+
+        const note = {
+            id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            text,
+            createdAt: new Date().toISOString(),
+        };
+
+        this.jotterNotes.unshift(note);
+        this.persistJotter();
+        input.value = '';
+        this.renderJotter();
+        this.toast('Note added', 'success');
+    },
+
+    deleteJotterNote(id) {
+        this.jotterNotes = this.jotterNotes.filter(n => n.id !== id);
+        this.persistJotter();
+        this.renderJotter();
+        this.toast('Note deleted', 'info');
+    },
+
+    persistJotter() {
+        localStorage.setItem('lockroute_jotter', JSON.stringify(this.jotterNotes));
+        if (typeof cloudDB !== 'undefined' && firebaseReady && typeof cloudDB.saveJotter === 'function') {
+            cloudDB.saveJotter(this.jotterNotes);
+        }
+    },
+
+    renderJotter() {
+        const container = document.getElementById('jotter-list');
+
+        if (this.jotterNotes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">📝</span>
+                    <p>No notes yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.jotterNotes.map(note => {
+            const date = new Date(note.createdAt);
+            const timeStr = date.toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            const escapedText = note.text.replace(/</g, '&lt;').replace(/\n/g, '<br>');
+            return `
+                <div class="card jotter-note">
+                    <div class="jotter-note-header">
+                        <span class="jotter-note-time">${timeStr}</span>
+                        <button class="btn-icon jotter-delete" onclick="app.deleteJotterNote('${note.id}')" title="Delete note">&times;</button>
+                    </div>
+                    <div class="jotter-note-text">${escapedText}</div>
+                </div>
+            `;
+        }).join('');
     },
 
     // ---- Current Time Updater ----

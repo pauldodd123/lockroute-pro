@@ -110,6 +110,28 @@ const cloudDB = {
         }
     },
 
+    // Save jotter notes
+    async saveJotter(notes) {
+        if (!firebaseReady) return;
+        try {
+            await db.collection('config').doc('jotter').set({ notes });
+        } catch (e) {
+            console.error('Error saving jotter to Firestore:', e);
+        }
+    },
+
+    // Load jotter notes
+    async loadJotter() {
+        if (!firebaseReady) return null;
+        try {
+            const doc = await db.collection('config').doc('jotter').get();
+            return doc.exists ? doc.data().notes : null;
+        } catch (e) {
+            console.error('Error loading jotter from Firestore:', e);
+            return null;
+        }
+    },
+
     // Migrate localStorage data to Firestore (one-time)
     async migrateFromLocalStorage(jobs, settings) {
         if (!firebaseReady) return;
