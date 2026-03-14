@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Policy — LockRoute Pro</title>
+    <meta name="description" content="Cookie Policy for LockRoute Pro. Learn how we use cookies and local storage to provide our scheduling and routing service for auto locksmiths.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #818cf8;
+            --dark: #0f172a;
+            --gray-900: #111827;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-400: #9ca3af;
+            --gray-300: #d1d5db;
+            --gray-100: #f3f4f6;
+            --white: #ffffff;
+            --radius: 16px;
+            --radius-sm: 8px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            line-height: 1.6;
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* ============================
+           Navigation
+           ============================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .nav-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary); }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white) !important;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 24px rgba(79, 70, 229, 0.4);
+        }
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(79, 70, 229, 0.5);
+        }
+
+        /* ============================
+           Page Content
+           ============================ */
+        .page-header {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%);
+            padding: 140px 24px 64px;
+            text-align: center;
+            color: var(--white);
+        }
+
+        .page-header h1 {
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+
+        .page-header p {
+            color: var(--gray-400);
+            font-size: 1rem;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 64px 24px 96px;
+        }
+
+        .content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-top: 48px;
+            margin-bottom: 16px;
+            line-height: 1.3;
+        }
+
+        .content h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .content p {
+            color: var(--gray-600);
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .content ul, .content ol {
+            color: var(--gray-600);
+            margin-bottom: 16px;
+            padding-left: 24px;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content a {
+            color: var(--primary);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .content a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .content strong {
+            color: var(--gray-900);
+            font-weight: 600;
+        }
+
+        .summary-box {
+            background: var(--gray-100);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 32px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .summary-box p {
+            color: var(--gray-700);
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+
+        /* ============================
+           Cookie Table
+           ============================ */
+        .cookie-table-wrapper {
+            overflow-x: auto;
+            margin: 24px 0 32px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-300);
+        }
+
+        .cookie-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            min-width: 580px;
+        }
+
+        .cookie-table thead {
+            background: var(--gray-100);
+        }
+
+        .cookie-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--gray-300);
+        }
+
+        .cookie-table td {
+            padding: 14px 20px;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: top;
+            line-height: 1.6;
+        }
+
+        .cookie-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cookie-table tbody tr:hover {
+            background: rgba(79, 70, 229, 0.02);
+        }
+
+        .cookie-type-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 10px;
+            border-radius: 100px;
+        }
+
+        .badge-essential {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .badge-functional {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+        }
+
+        .cookie-name-code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            background: var(--gray-100);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--gray-900);
+        }
+
+        /* ============================
+           Footer
+           ============================ */
+        .footer {
+            background: var(--dark);
+            color: var(--gray-400);
+            padding: 64px 0 32px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 24px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-top: 16px;
+            max-width: 300px;
+        }
+
+        .footer h4 {
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--white); }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 32px;
+            text-align: center;
+            font-size: 0.85rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        /* ============================
+           Responsive
+           ============================ */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+
+            .page-header { padding: 120px 24px 48px; }
+
+            .content { padding: 40px 20px 64px; }
+
+            .content h2 { margin-top: 36px; }
+
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+
+            .summary-box { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .footer-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <div class="nav-logo-icon">🔑</div>
+                LockRoute Pro
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="app.html" class="nav-cta">Launch App</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>Cookie Policy</h1>
+        <p>Last updated: March 2026</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <div class="summary-box">
+            <p><strong>In short:</strong> LockRoute Pro uses only essential cookies and local storage required to run the app. We do not use any third-party advertising or tracking cookies. Your data stays yours.</p>
+        </div>
+
+        <h2>1. Introduction</h2>
+        <p>This Cookie Policy explains how LockRoute Pro ("we", "us", or "our") uses cookies, local storage, and similar technologies when you visit our website at <strong>lockroutepro.com</strong> or use our web application.</p>
+        <p>This policy complies with the UK General Data Protection Regulation (UK GDPR), the Data Protection Act 2018, and the Privacy and Electronic Communications Regulations 2003 (PECR).</p>
+
+        <h2>2. What Are Cookies?</h2>
+        <p>Cookies are small text files placed on your device by a website you visit. They are widely used to make websites work efficiently and to provide information to the site owners. Local storage and session storage are similar browser technologies that allow websites to store data on your device.</p>
+
+        <h2>3. How We Use Cookies and Storage</h2>
+        <p>LockRoute Pro uses only <strong>strictly necessary</strong> cookies and storage mechanisms that are essential for the app to function. We do not use any cookies for advertising, analytics, or third-party tracking purposes.</p>
+
+        <h3>3.1 Categories of Cookies We Use</h3>
+        <p>Our cookies and storage fall into two categories:</p>
+        <ul>
+            <li><strong>Essential cookies</strong> — required for authentication and core app functionality. These cannot be disabled as the app will not work without them.</li>
+            <li><strong>Functional storage</strong> — used to cache data locally so the app can work offline and load faster. These improve performance but do not track you.</li>
+        </ul>
+
+        <h2>4. Cookie and Storage Details</h2>
+        <p>The table below lists every cookie and storage item used by LockRoute Pro, along with its purpose and how long it lasts.</p>
+
+        <div class="cookie-table-wrapper">
+            <table class="cookie-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Purpose</th>
+                        <th>Duration</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="cookie-name-code">sb-*-auth-token</span></td>
+                        <td>Cookie</td>
+                        <td>Supabase authentication session token. Keeps you signed in securely.</td>
+                        <td>Session / up to 7 days</td>
+                        <td><span class="cookie-type-badge badge-essential">Essential</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">sb-*-auth-token-code-verifier</span></td>
+                        <td>Cookie</td>
+                        <td>PKCE code verifier for secure OAuth authentication flows.</td>
+                        <td>Session</td>
+                        <td><span class="cookie-type-badge badge-essential">Essential</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">supabase.auth.token</span></td>
+                        <td>localStorage</td>
+                        <td>Stores the authentication refresh token to maintain your login session.</td>
+                        <td>Persistent (until logout)</td>
+                        <td><span class="cookie-type-badge badge-essential">Essential</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">lr-jobs-cache</span></td>
+                        <td>localStorage</td>
+                        <td>Caches your job data locally so the app can load quickly and work offline.</td>
+                        <td>Persistent (until cleared)</td>
+                        <td><span class="cookie-type-badge badge-functional">Functional</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">lr-calendar-cache</span></td>
+                        <td>localStorage</td>
+                        <td>Caches calendar and scheduling data for offline access.</td>
+                        <td>Persistent (until cleared)</td>
+                        <td><span class="cookie-type-badge badge-functional">Functional</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">lr-settings</span></td>
+                        <td>localStorage</td>
+                        <td>Stores your app preferences such as home location, working hours, and display settings.</td>
+                        <td>Persistent (until cleared)</td>
+                        <td><span class="cookie-type-badge badge-functional">Functional</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">lr-route-cache</span></td>
+                        <td>localStorage</td>
+                        <td>Caches route and geocoding data to reduce map API calls and improve speed.</td>
+                        <td>Persistent (until cleared)</td>
+                        <td><span class="cookie-type-badge badge-functional">Functional</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-name-code">mapbox-gl-*</span></td>
+                        <td>Cookie / localStorage</td>
+                        <td>Set by Mapbox to deliver map tiles, handle map interactions, and cache map data for performance.</td>
+                        <td>Session / Persistent</td>
+                        <td><span class="cookie-type-badge badge-functional">Functional</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>5. Third-Party Cookies</h2>
+        <p>We do <strong>not</strong> use any third-party advertising, remarketing, or behavioural tracking cookies. The only third-party technology that may set cookies is <strong>Mapbox</strong>, which is used solely to provide map and routing functionality within the app. Mapbox processes data in accordance with their <a href="https://www.mapbox.com/legal/privacy" target="_blank" rel="noopener">privacy policy</a>.</p>
+
+        <h2>6. Consent and Strictly Necessary Cookies</h2>
+        <p>Under PECR and UK GDPR, strictly necessary cookies do not require consent. All cookies and storage used by LockRoute Pro fall into the "strictly necessary" or "functional" categories — they are essential for the app to operate or to provide features you have requested.</p>
+        <p>Because we do not use any advertising or non-essential tracking cookies, we do not display a cookie consent banner. If we ever introduce non-essential cookies in the future, we will update this policy and implement an appropriate consent mechanism before doing so.</p>
+
+        <h2>7. How to Manage Cookies</h2>
+        <p>You can control and delete cookies through your browser settings. Please note that disabling essential cookies will prevent you from signing in to LockRoute Pro.</p>
+        <p>To manage cookies in common browsers:</p>
+        <ul>
+            <li><strong>Chrome:</strong> Settings &gt; Privacy and Security &gt; Cookies and other site data</li>
+            <li><strong>Firefox:</strong> Settings &gt; Privacy &amp; Security &gt; Cookies and Site Data</li>
+            <li><strong>Safari:</strong> Preferences &gt; Privacy &gt; Manage Website Data</li>
+            <li><strong>Edge:</strong> Settings &gt; Cookies and site permissions &gt; Cookies and site data</li>
+        </ul>
+        <p>To clear local storage data, you can use your browser's developer tools (usually accessible via F12) or clear all site data through your browser settings.</p>
+
+        <h2>8. Changes to This Policy</h2>
+        <p>We may update this Cookie Policy from time to time to reflect changes in technology or regulation. When we make material changes, we will update the "Last updated" date at the top of this page. We encourage you to review this policy periodically.</p>
+
+        <h2>9. Contact Us</h2>
+        <p>If you have any questions about our use of cookies or this policy, please contact us:</p>
+        <ul>
+            <li><strong>Email:</strong> <a href="mailto:support@lockroutepro.com">support@lockroutepro.com</a></li>
+        </ul>
+        <p>For more information about how we handle your personal data, please see our <a href="privacy.html">Privacy Policy</a>.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="nav-logo">
+                    <div class="nav-logo-icon">🔑</div>
+                    LockRoute Pro
+                </div>
+                <p>The smart scheduling and route planning app built specifically for mobile auto locksmiths across the UK.</p>
+            </div>
+            <div>
+                <h4>Product</h4>
+                <ul class="footer-links">
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="index.html#pricing">Pricing</a></li>
+                    <li><a href="help.html">Help Centre</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Support</h4>
+                <ul class="footer-links">
+                    <li><a href="contact.html">Contact Us</a></li>
+                    <li><a href="help.html">Help Centre</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Legal</h4>
+                <ul class="footer-links">
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="cookies.html">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 LockRoute Pro. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

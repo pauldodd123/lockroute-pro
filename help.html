@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Centre — LockRoute Pro</title>
+    <meta name="description" content="Find answers to common questions about LockRoute Pro or get in touch with our support team.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================
+           Reset & Base
+           ============================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #818cf8;
+            --accent: #f59e0b;
+            --accent-dark: #d97706;
+            --dark: #0f172a;
+            --dark-mid: #1e293b;
+            --gray-900: #111827;
+            --gray-800: #1f2937;
+            --gray-700: #374151;
+            --gray-600: #4b5563;
+            --gray-400: #9ca3af;
+            --gray-300: #d1d5db;
+            --gray-100: #f3f4f6;
+            --white: #ffffff;
+            --success: #10b981;
+            --error: #ef4444;
+            --radius: 16px;
+            --radius-sm: 8px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-900);
+            line-height: 1.6;
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        img { max-width: 100%; display: block; }
+        a { text-decoration: none; color: inherit; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ============================
+           Typography
+           ============================ */
+        h1, h2, h3, h4 { line-height: 1.2; font-weight: 800; }
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); }
+        h2 { font-size: clamp(2rem, 4vw, 3rem); }
+        h3 { font-size: 1.25rem; font-weight: 700; }
+
+        .section-label {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+            padding: 6px 16px;
+            border-radius: 100px;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            max-width: 600px;
+            margin: 16px auto 0;
+        }
+
+        .text-center { text-align: center; }
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ============================
+           Buttons
+           ============================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            box-shadow: 0 4px 24px rgba(79, 70, 229, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(79, 70, 229, 0.5);
+        }
+
+        /* ============================
+           Navigation
+           ============================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .nav-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary); }
+
+        .nav-cta {
+            padding: 10px 24px !important;
+            font-size: 0.9rem !important;
+            color: var(--white) !important;
+        }
+
+        /* ============================
+           Hero
+           ============================ */
+        .hero {
+            position: relative;
+            padding: 160px 0 80px;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79, 70, 229, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(129, 140, 248, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 50% at 20% 80%, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .hero h1 { margin-bottom: 16px; }
+        .hero .section-subtitle { margin-bottom: 0; }
+
+        /* ============================
+           Search Bar
+           ============================ */
+        .search-section {
+            padding: 0 0 48px;
+        }
+
+        .search-wrapper {
+            max-width: 640px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-wrapper svg {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 20px 18px 52px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--white);
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--gray-400);
+        }
+
+        .search-no-results {
+            text-align: center;
+            color: var(--gray-600);
+            padding: 32px;
+            font-size: 1rem;
+            display: none;
+        }
+
+        /* ============================
+           FAQ Section
+           ============================ */
+        .faq-section {
+            padding: 0 0 80px;
+        }
+
+        .faq-category {
+            margin-bottom: 40px;
+        }
+
+        .faq-category-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .faq-category-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .accordion-item {
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            background: var(--white);
+        }
+
+        .accordion-item:hover {
+            border-color: var(--primary-light);
+            box-shadow: 0 2px 12px rgba(79, 70, 229, 0.08);
+        }
+
+        .accordion-item.open {
+            border-color: var(--primary);
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.1);
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            cursor: pointer;
+            gap: 16px;
+            user-select: none;
+        }
+
+        .accordion-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .accordion-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .accordion-item.open .accordion-icon {
+            transform: rotate(180deg);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .accordion-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--gray-600);
+        }
+
+        .accordion-item.open .accordion-icon svg {
+            color: var(--primary);
+        }
+
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+        }
+
+        .accordion-content {
+            padding: 0 24px 20px;
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .accordion-item.hidden {
+            display: none;
+        }
+
+        /* ============================
+           Contact / Support Form
+           ============================ */
+        .support-section {
+            padding: 80px 0;
+            background: var(--gray-100);
+        }
+
+        .support-inner {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .support-section h2 {
+            margin-bottom: 8px;
+        }
+
+        .support-section .section-subtitle {
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 6px;
+        }
+
+        .form-group label span.required {
+            color: var(--error);
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--white);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 140px;
+        }
+
+        .form-submit {
+            margin-top: 8px;
+            width: 100%;
+            justify-content: center;
+            padding: 16px 32px;
+            font-size: 1.05rem;
+        }
+
+        .form-message {
+            margin-top: 16px;
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .form-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            display: block;
+        }
+
+        .form-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: block;
+        }
+
+        /* ============================
+           Footer
+           ============================ */
+        .footer {
+            background: var(--dark);
+            color: var(--gray-400);
+            padding: 64px 0 32px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-top: 16px;
+            max-width: 300px;
+        }
+
+        .footer h4 {
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--white); }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 32px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        /* ============================
+           Animations
+           ============================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+        /* ============================
+           Responsive
+           ============================ */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hero { padding: 120px 0 60px; }
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+            .accordion-header { padding: 16px 18px; }
+            .accordion-content { padding: 0 18px 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .footer-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <div class="nav-logo-icon">🔑</div>
+                LockRoute Pro
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="app.html" class="btn btn-primary nav-cta">Launch App</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container text-center">
+            <span class="section-label">Help Centre</span>
+            <h1>How can we <span class="text-gradient">help you?</span></h1>
+            <p class="section-subtitle">Find answers to common questions below, or reach out to our support team directly.</p>
+        </div>
+    </section>
+
+    <!-- Search -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search for answers...">
+            </div>
+            <p class="search-no-results" id="noResults">No articles match your search. Try a different term or contact us below.</p>
+        </div>
+    </section>
+
+    <!-- FAQ Articles -->
+    <section class="faq-section">
+        <div class="container">
+
+            <!-- Getting Started -->
+            <div class="faq-category fade-in" data-category="getting-started">
+                <div class="faq-category-title">
+                    <div class="faq-category-icon">🚀</div>
+                    Getting Started
+                </div>
+
+                <div class="accordion-item" data-search="create account sign up register">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I create an account?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Tap the "Launch App" button and select "Sign Up" on the login screen. Enter your email address and choose a secure password to create your account. You will receive a confirmation email to verify your address before you can start using the app.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="add first job create new job">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I add my first job?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Click the "+" button or the "Add Job" card on your dashboard. Fill in the customer name, address, and any notes, then choose a date and time. The job will appear on your calendar and map straight away.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="home base location set up address starting point">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I set up my home/base location?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Open Settings from the sidebar and look for the "Home Location" field. Enter your home or workshop address and it will be geocoded automatically. This location is used to calculate travel times and to suggest the best time slots for new jobs.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Managing Jobs -->
+            <div class="faq-category fade-in" data-category="managing-jobs">
+                <div class="faq-category-title">
+                    <div class="faq-category-icon">📋</div>
+                    Managing Jobs
+                </div>
+
+                <div class="accordion-item" data-search="schedule job specific time date booking">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I schedule a job for a specific time?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            When adding or editing a job, use the date and time pickers to set the exact start time. You can also click directly on a time slot in the calendar view to pre-fill the time automatically.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="drag drop calendar move reschedule">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I drag and drop jobs on the calendar?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Simply click and hold a job block on the calendar, then drag it to a new time slot or day. Release to confirm the change. The job details and travel time estimates will update automatically once you drop it.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="mark complete finish done job status">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I mark a job as complete?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Open the job by clicking on it in the calendar or job list, then change the status dropdown to "Completed". You can also swipe right on a job card in the mobile view to quickly mark it as done.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="status colours pending confirmed completed cancelled meaning">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>What do the different job statuses mean?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            <strong>Pending</strong> means the job has been created but not yet confirmed with the customer. <strong>Confirmed</strong> means both you and the customer have agreed on the time. <strong>Completed</strong> marks a finished job, and <strong>Cancelled</strong> means the job is no longer going ahead. Each status is colour-coded on the calendar for quick visibility.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routing & Maps -->
+            <div class="faq-category fade-in" data-category="routing-maps">
+                <div class="faq-category-title">
+                    <div class="faq-category-icon">🗺️</div>
+                    Routing & Maps
+                </div>
+
+                <div class="accordion-item" data-search="smart route suggestions optimise travel time">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How does the smart route suggestions work?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            When you add a new job, LockRoute Pro looks at your existing schedule and calculates travel times between each appointment using real-world driving data. It then suggests the best available time slots that minimise your driving and avoid gaps in your day, so you can fit more jobs in and spend less time on the road.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="view map jobs pins markers location">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I view my jobs on the map?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            The map panel on the right-hand side of the app shows all of your scheduled jobs as pins. Click any pin to see the job details, or zoom in and out to get a broader view of your day. The map updates live as you add, move, or remove jobs.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account & Billing -->
+            <div class="faq-category fade-in" data-category="account-billing">
+                <div class="faq-category-title">
+                    <div class="faq-category-icon">💳</div>
+                    Account & Billing
+                </div>
+
+                <div class="accordion-item" data-search="change password reset security login">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I change my password?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Go to Settings and select "Change Password". Enter your current password, then type and confirm your new password. If you have forgotten your current password, use the "Forgot Password" link on the login screen to reset it via email.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="cost price subscription plan monthly payment how much">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How much does LockRoute Pro cost?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            LockRoute Pro is just &pound;10 per month with no long-term contracts. You get a 14-day free trial when you sign up, so you can try every feature before paying. Visit our <a href="index.html#pricing" style="color:var(--primary);font-weight:600;">pricing page</a> for full details.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" data-search="cancel subscription stop billing unsubscribe">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <h3>How do I cancel my subscription?</h3>
+                        <div class="accordion-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            Open Settings and go to "Subscription". Click "Cancel Subscription" and confirm your choice. Your access will remain active until the end of your current billing period, and you will not be charged again. You can resubscribe at any time.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Support Form -->
+    <section class="support-section" id="contact-support">
+        <div class="container">
+            <div class="support-inner text-center">
+                <span class="section-label">Support</span>
+                <h2>Still need <span class="text-gradient">help?</span></h2>
+                <p class="section-subtitle">Send us a message and we'll get back to you as soon as possible, usually within a few hours.</p>
+            </div>
+            <div class="support-inner">
+                <form id="supportForm" onsubmit="handleSubmit(event)">
+                    <div class="form-group">
+                        <label for="name">Name <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="name" name="name" required placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" class="form-input" id="email" name="email" required placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" class="form-input" id="subject" name="subject" placeholder="What is this about?">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message <span class="required">*</span></label>
+                        <textarea class="form-textarea" id="message" name="message" required placeholder="Describe your issue or question..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary form-submit" id="submitBtn">Send Message</button>
+                    <div class="form-message" id="formMessage"></div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="nav-logo">
+                        <div class="nav-logo-icon">🔑</div>
+                        LockRoute Pro
+                    </div>
+                    <p>The smart scheduling and route planning app built specifically for mobile auto locksmiths across the UK.</p>
+                </div>
+                <div>
+                    <h4>Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#pricing">Pricing</a></li>
+                        <li><a href="index.html#how-it-works">How It Works</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="help.html">Help Centre</a></li>
+                        <li><a href="contact.html">Contact Us</a></li>
+                        <li><a href="contact.html#feature-requests">Feature Requests</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="cookies.html">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 LockRoute Pro. All rights reserved. Made with 🔑 for locksmiths.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ============================
+        // Supabase Init
+        // ============================
+        const SUPABASE_URL = 'https://klnerdcxmhrqqrwrleez.supabase.co';
+        const SUPABASE_ANON_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsbmVyZGN4bWhycXFyd3JsZWV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1MzE1MTEsImV4cCI6MjA2MjEwNzUxMX0', 'q0LnY6FdQZm3SmmbFW0Lsz7oZabv4AINEwlWhuTML5A'].join('.');
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ============================
+        // Accordion
+        // ============================
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const body = item.querySelector('.accordion-body');
+            const isOpen = item.classList.contains('open');
+
+            // Close all open accordions
+            document.querySelectorAll('.accordion-item.open').forEach(openItem => {
+                openItem.classList.remove('open');
+                openItem.querySelector('.accordion-body').style.maxHeight = null;
+            });
+
+            // Open clicked one (if it was not already open)
+            if (!isOpen) {
+                item.classList.add('open');
+                body.style.maxHeight = body.scrollHeight + 'px';
+            }
+        }
+
+        // ============================
+        // Search / Filter
+        // ============================
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.accordion-item');
+            const categories = document.querySelectorAll('.faq-category');
+            let totalVisible = 0;
+
+            items.forEach(item => {
+                const title = item.querySelector('h3').textContent.toLowerCase();
+                const content = item.querySelector('.accordion-content').textContent.toLowerCase();
+                const searchData = (item.getAttribute('data-search') || '').toLowerCase();
+                const match = !query || title.includes(query) || content.includes(query) || searchData.includes(query);
+
+                item.classList.toggle('hidden', !match);
+                if (match) totalVisible++;
+            });
+
+            // Hide empty categories
+            categories.forEach(cat => {
+                const visibleItems = cat.querySelectorAll('.accordion-item:not(.hidden)');
+                cat.style.display = visibleItems.length === 0 ? 'none' : '';
+            });
+
+            noResults.style.display = (query && totalVisible === 0) ? 'block' : 'none';
+        });
+
+        // ============================
+        // Support Form Submit
+        // ============================
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('formMessage');
+            const form = document.getElementById('supportForm');
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            if (!name || !email || !message) {
+                msg.textContent = 'Please fill in all required fields.';
+                msg.className = 'form-message error';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            msg.className = 'form-message';
+            msg.style.display = 'none';
+
+            try {
+                const { error } = await sb
+                    .from('messages')
+                    .insert([{
+                        name: name,
+                        email: email,
+                        subject: subject || 'Help Centre Enquiry',
+                        message: message,
+                        type: 'help'
+                    }]);
+
+                if (error) throw error;
+
+                msg.textContent = 'Message sent successfully! We will get back to you soon.';
+                msg.className = 'form-message success';
+                form.reset();
+            } catch (err) {
+                console.error('Submit error:', err);
+                msg.textContent = 'Something went wrong. Please try again or email us directly.';
+                msg.className = 'form-message error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Message';
+            }
+        }
+
+        // ============================
+        // Scroll Animations
+        // ============================
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+
+</body>
+</html>
