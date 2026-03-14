@@ -165,7 +165,7 @@ const app = {
     },
 
     // Targeted save for single job operations (more efficient than full sync)
-    saveJob(job) {
+    persistJob(job) {
         localStorage.setItem('lockroute_jobs', JSON.stringify(this.jobs));
         if (typeof cloudDB !== 'undefined' && firebaseReady) {
             cloudDB.saveJob(job);
@@ -261,6 +261,9 @@ const app = {
 
         // Settings save
         document.getElementById('save-settings').addEventListener('click', () => this.saveSettings());
+
+        // Clear all data
+        document.getElementById('clear-all-data').addEventListener('click', () => this.clearAllJobs());
 
         // Lunch toggle
         document.getElementById('lunch-enabled').addEventListener('change', (e) => {
@@ -484,7 +487,7 @@ const app = {
             this.jobs.push(job);
         }
 
-        this.saveJob(job);
+        this.persistJob(job);
         this.resetJobForm();
         this.updateQuickStats();
 
@@ -506,7 +509,7 @@ const app = {
         const job = this.jobs.find(j => j.id === id);
         if (job) {
             job.status = 'completed';
-            this.saveJob(job);
+            this.persistJob(job);
             this.closeModal();
             this.toast('Job marked as complete', 'success');
             this.renderDashboard();
@@ -1560,6 +1563,27 @@ const app = {
 
         this.saveData();
         this.toast('Settings saved!', 'success');
+    },
+
+    clearAllJobs() {
+        if (!confirm('Are you sure you want to delete ALL jobs? This cannot be undone.')) return;
+
+        // Clear Firestore jobs
+        if (typeof cloudDB !== 'undefined' && firebaseReady) {
+            db.collection('jobs').get().then(snapshot => {
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                return batch.commit();
+            }).catch(e => console.error('Error clearing Firestore:', e));
+        }
+
+        // Clear local
+        this.jobs = [];
+        localStorage.removeItem('lockroute_jobs');
+        this.saveData();
+        this.updateQuickStats();
+        this.renderDashboard();
+        this.toast('All jobs deleted', 'info');
     },
 
     // ---- Quick Stats ----
