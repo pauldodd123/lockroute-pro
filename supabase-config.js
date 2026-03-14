@@ -384,8 +384,15 @@ function initAuthUI() {
                 password
             );
             if (data.user && !data.session) {
-                authError.style.color = 'var(--success)';
-                authError.textContent = 'Check your email to confirm your account';
+                // Supabase returns a user without session if email already exists (to prevent enumeration)
+                // Check for fake/empty identities as a signal
+                if (!data.user.identities || data.user.identities.length === 0) {
+                    authError.style.color = '';
+                    authError.textContent = 'An account with this email already exists. Please log in.';
+                } else {
+                    authError.style.color = 'var(--success)';
+                    authError.textContent = 'Check your email to confirm your account';
+                }
             }
         } catch (err) {
             authError.textContent = err.message;

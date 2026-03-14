@@ -2234,6 +2234,11 @@ const app = {
         this.jobs = [];
         this.timeBlocks = [];
         this.jotterNotes = [];
+        // Clear localStorage so data doesn't bleed into another user's account
+        localStorage.removeItem('lockroute_jobs');
+        localStorage.removeItem('lockroute_settings');
+        localStorage.removeItem('lockroute_blocks');
+        localStorage.removeItem('lockroute_jotter');
     },
 
     clearAllJobs() {
