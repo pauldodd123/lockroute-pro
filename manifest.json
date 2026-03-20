@@ -4,8 +4,8 @@
   "description": "Smart scheduling, routing and job management for auto locksmiths",
   "start_url": "/app.html",
   "display": "standalone",
-  "background_color": "#4f46e5",
-  "theme_color": "#4f46e5",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "orientation": "any",
   "scope": "/",
   "icons": [
