@@ -2474,7 +2474,7 @@ const app = {
     },
 
     // ---- Vehicle Reg Lookup ----
-    lookupVehicleReg() {
+    async lookupVehicleReg() {
         const reg = document.getElementById('job-reg').value.trim().replace(/\s+/g, '').toUpperCase();
         if (!reg) {
             this.toast('Enter a registration number first', 'error');
@@ -2484,15 +2484,47 @@ const app = {
         // Format reg with space for display (e.g. AB12CDE -> AB12 CDE)
         const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
 
-        this._lastVehicleInfo = { registrationNumber: reg };
         const vInfo = document.getElementById('vehicle-info');
-        const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
-        const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
-        vInfo.innerHTML = `<strong>${displayReg}</strong> — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a> · <a href="${dvlaUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">DVLA check ↗</a>`;
-        vInfo.style.display = 'block';
+        const btn = document.getElementById('lookup-reg-btn');
 
-        window.open(motUrl, '_blank');
-        this.toast('Reg saved', 'success');
+        vInfo.innerHTML = `Looking up <strong>${displayReg}</strong>…`;
+        vInfo.style.display = 'block';
+        if (btn) btn.disabled = true;
+
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('vehicle-lookup', {
+                body: { registration: reg }
+            });
+
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
+            const vehicleInfo = {
+                registrationNumber: data.registration || reg,
+                make: data.make,
+                colour: data.colour,
+                yearOfManufacture: data.yearOfManufacture,
+                fuelType: data.fuelType,
+                motStatus: data.motStatus,
+                taxStatus: data.taxStatus,
+            };
+
+            this._lastVehicleInfo = vehicleInfo;
+
+            const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
+            vInfo.innerHTML = this.formatVehicleInfo(vehicleInfo) +
+                ` — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a>`;
+
+            this.toast('Vehicle found', 'success');
+        } catch (err) {
+            this._lastVehicleInfo = { registrationNumber: reg };
+            const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
+            const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
+            vInfo.innerHTML = `<strong>${displayReg}</strong> — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a> · <a href="${dvlaUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">DVLA check ↗</a>`;
+            this.toast(err.message || 'Lookup failed', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
     },
 
     formatVehicleInfo(info) {
