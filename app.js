@@ -2513,14 +2513,14 @@ const app = {
 
             const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
             vInfo.innerHTML = this.formatVehicleInfo(vehicleInfo) +
-                ` — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a>`;
+                `<div class="vehicle-links"><a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a></div>`;
 
             this.toast('Vehicle found', 'success');
         } catch (err) {
             this._lastVehicleInfo = { registrationNumber: reg };
             const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
             const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
-            vInfo.innerHTML = `<strong>${displayReg}</strong> — <a href="${motUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">MOT history ↗</a> · <a href="${dvlaUrl}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;">DVLA check ↗</a>`;
+            vInfo.innerHTML = `<div class="vehicle-card-header"><span class="vehicle-reg-plate">${displayReg}</span></div><div class="vehicle-links"><a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a><a href="${dvlaUrl}" target="_blank" rel="noopener">DVLA check ↗</a></div>`;
             this.toast(err.message || 'Lookup failed', 'error');
         } finally {
             if (btn) btn.disabled = false;
@@ -2529,14 +2529,36 @@ const app = {
 
     formatVehicleInfo(info) {
         if (!info) return '';
-        let html = `<strong>${info.registrationNumber || ''}</strong>`;
-        if (info.make) html += ` — ${info.make}`;
-        if (info.colour) html += ` ${info.colour}`;
-        if (info.yearOfManufacture) html += ` (${info.yearOfManufacture})`;
-        if (info.fuelType) html += ` | ${info.fuelType}`;
-        if (info.motStatus) html += ` | MOT: ${info.motStatus}`;
-        if (info.taxStatus) html += ` | Tax: ${info.taxStatus}`;
-        if (info.note) html += `<br><small>${info.note}</small>`;
+        const reg = info.registrationNumber || '';
+        const makeText = [info.make, info.colour, info.yearOfManufacture ? `(${info.yearOfManufacture})` : ''].filter(Boolean).join(' ');
+
+        let html = `<div class="vehicle-card-header">`;
+        html += `<span class="vehicle-reg-plate">${reg}</span>`;
+        if (makeText) html += `<span class="vehicle-make">${makeText}</span>`;
+        html += `</div>`;
+
+        const details = [];
+        if (info.yearOfManufacture) details.push({ label: 'Year', value: info.yearOfManufacture });
+        if (info.fuelType) details.push({ label: 'Fuel', value: info.fuelType });
+        if (info.motStatus) {
+            const isValid = info.motStatus.toLowerCase() === 'valid';
+            details.push({ label: 'MOT', value: info.motStatus, cls: isValid ? 'mot-valid' : 'mot-expired' });
+        }
+        if (info.taxStatus) {
+            const isValid = info.taxStatus.toLowerCase() === 'taxed';
+            details.push({ label: 'Tax', value: info.taxStatus, cls: isValid ? 'tax-valid' : 'tax-expired' });
+        }
+        if (info.colour) details.push({ label: 'Colour', value: info.colour });
+
+        if (details.length) {
+            html += `<div class="vehicle-details-grid">`;
+            for (const d of details) {
+                html += `<div class="vehicle-detail-chip"><span class="vd-label">${d.label}</span><span class="vd-value${d.cls ? ' ' + d.cls : ''}">${d.value}</span></div>`;
+            }
+            html += `</div>`;
+        }
+
+        if (info.note) html += `<div style="margin-top:8px;font-size:12px;color:var(--text-light);">${info.note}</div>`;
         return html;
     },
 
