@@ -74,6 +74,15 @@ const _geocodeCache = {};
 // Public token (pk.*) — safe for client-side use
 const MAPBOX_TOKEN = ['pk.eyJ1IjoicGF1bGRvZGQxMjMiLC', 'JhIjoiY21nZ3RocWlxMGZwMDJsczl0NXUxdGlndSJ9', '.kuA0Ty6VTDTaIqmzvKkNag'].join('');
 
+function getNavigationUrl(job) {
+    const parts = [job.address, job.postcode].filter(Boolean);
+    const query = encodeURIComponent(parts.join(', '));
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    return isIOS
+        ? `maps://maps.apple.com/?q=${query}`
+        : `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
 async function geocodePostcode(postcode) {
     if (!postcode) return null;
     const clean = postcode.replace(/\s/g, '').toUpperCase();
@@ -2097,7 +2106,10 @@ const app = {
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Location</span>
-                <span class="modal-detail-value">${job.postcode}${job.address ? ' - ' + job.address : ''}</span>
+                <span class="modal-detail-value">
+                    ${job.postcode}${job.address ? ' - ' + job.address : ''}
+                    <a href="${getNavigationUrl(job)}" class="navigate-link" target="_blank" rel="noopener noreferrer">Navigate →</a>
+                </span>
             </div>
             ${job.vehicleReg ? `<div class="modal-detail-row">
                 <span class="modal-detail-label">Vehicle Reg</span>
