@@ -73,6 +73,7 @@ const POSTCODE_AREAS = {
 const _geocodeCache = {};
 // Public token (pk.*) — safe for client-side use
 const MAPBOX_TOKEN = ['pk.eyJ1IjoicGF1bGRvZGQxMjMiLC', 'JhIjoiY21nZ3RocWlxMGZwMDJsczl0NXUxdGlndSJ9', '.kuA0Ty6VTDTaIqmzvKkNag'].join('');
+const GETADDRESS_API_KEY = 'IeBdgvkkPEejT196TmyvyQ51146';
 
 function getNavigationUrl(job) {
     const parts = [job.address, job.postcode].filter(Boolean);
@@ -626,12 +627,17 @@ const app = {
         btn.disabled = true;
 
         try {
-            const { data, error } = await supabaseClient.functions.invoke('address-lookup', {
-                body: { postcode }
-            });
+            const cleanPostcode = postcode.replace(/\s+/g, '').toUpperCase();
+            const res = await fetch(
+                `https://api.getAddress.io/find/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&expand=true`
+            );
 
-            if (error) throw error;
-            if (data && data.error) throw new Error(data.error);
+            if (res.status === 404) throw new Error('Postcode not found');
+            if (res.status === 429) throw new Error('Lookup limit reached for today');
+            if (res.status === 401) throw new Error('Invalid API key');
+            if (!res.ok) throw new Error('Address lookup failed');
+
+            const data = await res.json();
 
             if (!data.addresses || data.addresses.length === 0) {
                 results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
@@ -640,11 +646,17 @@ const app = {
 
             results.innerHTML = '';
             data.addresses.forEach(addr => {
+                const parts = [
+                    addr.line_1, addr.line_2, addr.line_3, addr.line_4,
+                    addr.locality, addr.town_or_city, addr.county
+                ].filter(p => p && p.trim() !== '');
+                const formatted = parts.join(', ');
+
                 const div = document.createElement('div');
                 div.className = 'address-item';
-                div.textContent = addr.formatted;
+                div.textContent = formatted;
                 div.addEventListener('click', () => {
-                    document.getElementById('job-address').value = addr.formatted;
+                    document.getElementById('job-address').value = formatted;
                     results.style.display = 'none';
                     this.toast('Address selected', 'success');
                 });
