@@ -627,71 +627,56 @@ const app = {
         btn.disabled = true;
 
         try {
-            const cleanPostcode = postcode.replace(/\s+/g, '').toUpperCase();
-            let addresses = [];
+            const cleanPostcode = postcode.replace(/\s+/g, ' ').trim().toUpperCase();
 
-            // Try getAddress.io first (has full Royal Mail PAF data)
-            try {
-                const res = await fetch(
-                    `https://api.getAddress.io/find/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&expand=true`
-                );
-                if (res.status === 429) throw new Error('Lookup limit reached for today');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.addresses && data.addresses.length > 0) {
-                        addresses = data.addresses.map(addr => {
-                            const parts = [
-                                addr.line_1, addr.line_2, addr.line_3, addr.line_4,
-                                addr.locality, addr.town_or_city, addr.county
-                            ].filter(p => p && p.trim() !== '');
-                            return parts.join(', ');
-                        });
-                    }
-                }
-                // If find returned 404, try autocomplete+get flow
-                if (addresses.length === 0 && res.status !== 429) {
-                    const acRes = await fetch(
-                        `https://api.getAddress.io/autocomplete/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&all=true`
-                    );
-                    if (acRes.ok) {
-                        const acData = await acRes.json();
-                        if (acData.suggestions && acData.suggestions.length > 0) {
-                            addresses = acData.suggestions.map(s => s.address);
-                        }
-                    }
-                }
-            } catch (gaErr) {
-                if (gaErr.message === 'Lookup limit reached for today') throw gaErr;
-                console.warn('getAddress.io failed, trying fallback:', gaErr);
+            // Use getAddress.io autocomplete API (current documented endpoint)
+            const res = await fetch(
+                `https://api.getAddress.io/autocomplete/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&all=true`
+            );
+
+            console.log('getAddress.io autocomplete status:', res.status);
+
+            if (res.status === 429) throw new Error('Lookup limit reached for today');
+            if (res.status === 401) throw new Error('API key not authorised - check getAddress.io account');
+            if (!res.ok) {
+                const errText = await res.text();
+                console.warn('getAddress.io error:', res.status, errText);
+                throw new Error('Address lookup failed (' + res.status + ')');
             }
 
-            // Fallback: postcodes.io (free, no key, always works)
-            if (addresses.length === 0) {
-                const pcRes = await fetch(
-                    `https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`
-                );
-                if (pcRes.ok) {
-                    const pcData = await pcRes.json();
-                    if (pcData.result) {
-                        const r = pcData.result;
-                        const area = [r.admin_ward, r.admin_district, r.region].filter(Boolean).join(', ');
-                        results.innerHTML = '<div class="address-empty">Could not load individual addresses.<br>Area: <strong>' +
-                            area + '</strong><br>Please type your full address below.</div>';
-                        return;
-                    }
-                }
-                results.innerHTML = '<div class="address-empty">Postcode not recognised - please enter address manually</div>';
+            const data = await res.json();
+            console.log('getAddress.io response:', data);
+
+            if (!data.suggestions || data.suggestions.length === 0) {
+                results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
                 return;
             }
 
             results.innerHTML = '';
             const self = this;
-            addresses.forEach(formatted => {
+            data.suggestions.forEach(suggestion => {
                 const div = document.createElement('div');
                 div.className = 'address-item';
-                div.textContent = formatted;
-                div.addEventListener('click', () => {
-                    document.getElementById('job-address').value = formatted;
+                div.textContent = suggestion.address;
+                div.addEventListener('click', async () => {
+                    // Get full address details when clicked
+                    try {
+                        const detailRes = await fetch(
+                            `https://api.getAddress.io/get/${suggestion.id}?api-key=${GETADDRESS_API_KEY}`
+                        );
+                        if (detailRes.ok) {
+                            const detail = await detailRes.json();
+                            const parts = [
+                                detail.line_1, detail.line_2, detail.line_3, detail.line_4,
+                                detail.locality, detail.town_or_city, detail.county
+                            ].filter(p => p && p.trim() !== '');
+                            document.getElementById('job-address').value = parts.join(', ');
+                        } else {
+                            document.getElementById('job-address').value = suggestion.address;
+                        }
+                    } catch {
+                        document.getElementById('job-address').value = suggestion.address;
+                    }
                     results.style.display = 'none';
                     self.toast('Address selected', 'success');
                 });
