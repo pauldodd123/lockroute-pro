@@ -336,6 +336,17 @@ const app = {
             this.generateSuggestions();
         });
 
+        // Address lookup from postcode
+        document.getElementById('find-address-btn').addEventListener('click', () => this.findAddressFromPostcode());
+
+        // Close address dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const results = document.getElementById('address-results');
+            if (results && !results.contains(e.target) && e.target.id !== 'find-address-btn') {
+                results.style.display = 'none';
+            }
+        });
+
         // Reg lookup
         document.getElementById('lookup-reg-btn').addEventListener('click', () => this.lookupVehicleReg());
         document.getElementById('job-reg').addEventListener('input', (e) => {
@@ -601,6 +612,71 @@ const app = {
         });
     },
 
+    async findAddressFromPostcode() {
+        const postcode = document.getElementById('job-postcode').value.trim();
+        if (!postcode || postcode.length < 5) {
+            this.toast('Enter a full postcode first', 'error');
+            return;
+        }
+
+        const results = document.getElementById('address-results');
+        const btn = document.getElementById('find-address-btn');
+        results.innerHTML = '<div class="address-loading">Looking up addresses…</div>';
+        results.style.display = 'block';
+        btn.disabled = true;
+
+        try {
+            // First geocode the postcode to get coordinates for proximity
+            const geo = await geocodePostcode(postcode);
+            if (!geo) {
+                results.innerHTML = '<div class="address-empty">Postcode not found</div>';
+                return;
+            }
+
+            // Search for addresses near this postcode using Mapbox
+            const proximity = `${geo.lng},${geo.lat}`;
+            const res = await fetch(
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(postcode)}.json?country=gb&types=address&limit=10&proximity=${proximity}&access_token=${MAPBOX_TOKEN}`
+            );
+            const data = await res.json();
+
+            if (!data.features || data.features.length === 0) {
+                // Fallback: try reverse geocoding at the postcode coordinates
+                const revRes = await fetch(
+                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${geo.lng},${geo.lat}.json?country=gb&types=address&limit=10&access_token=${MAPBOX_TOKEN}`
+                );
+                const revData = await revRes.json();
+                if (!revData.features || revData.features.length === 0) {
+                    results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
+                    return;
+                }
+                data.features = revData.features;
+            }
+
+            results.innerHTML = '';
+            data.features.forEach(feat => {
+                const addr = feat.place_name.replace(/, United Kingdom$/i, '');
+                const div = document.createElement('div');
+                div.className = 'address-item';
+                div.textContent = addr;
+                div.addEventListener('click', () => {
+                    // Extract just the street part (before the first comma area)
+                    const parts = addr.split(',');
+                    const streetAddr = parts.length > 1 ? parts.slice(0, -1).join(',').trim() : addr;
+                    document.getElementById('job-address').value = streetAddr;
+                    results.style.display = 'none';
+                    this.toast('Address selected', 'success');
+                });
+                results.appendChild(div);
+            });
+        } catch (err) {
+            console.warn('Address lookup failed:', err);
+            results.innerHTML = '<div class="address-empty">Address lookup failed - please enter manually</div>';
+        } finally {
+            btn.disabled = false;
+        }
+    },
+
     estimateTravelMinutes(postcodeA, postcodeB) {
         const infoA = this.getPostcodeInfo(postcodeA);
         const infoB = this.getPostcodeInfo(postcodeB);
@@ -736,6 +812,7 @@ const app = {
         document.getElementById('job-reg').value = '';
         document.getElementById('job-price').value = '';
         document.getElementById('vehicle-info').style.display = 'none';
+        document.getElementById('address-results').style.display = 'none';
         this._lastVehicleInfo = null;
         this.setDefaultDates();
         document.querySelector('input[name="priority"][value="normal"]').checked = true;
