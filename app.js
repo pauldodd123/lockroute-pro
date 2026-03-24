@@ -626,44 +626,25 @@ const app = {
         btn.disabled = true;
 
         try {
-            // First geocode the postcode to get coordinates for proximity
-            const geo = await geocodePostcode(postcode);
-            if (!geo) {
-                results.innerHTML = '<div class="address-empty">Postcode not found</div>';
+            const { data, error } = await supabaseClient.functions.invoke('address-lookup', {
+                body: { postcode }
+            });
+
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
+            if (!data.addresses || data.addresses.length === 0) {
+                results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
                 return;
             }
 
-            // Search for addresses near this postcode using Mapbox
-            const proximity = `${geo.lng},${geo.lat}`;
-            const res = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(postcode)}.json?country=gb&types=address&limit=10&proximity=${proximity}&access_token=${MAPBOX_TOKEN}`
-            );
-            const data = await res.json();
-
-            if (!data.features || data.features.length === 0) {
-                // Fallback: try reverse geocoding at the postcode coordinates
-                const revRes = await fetch(
-                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${geo.lng},${geo.lat}.json?country=gb&types=address&limit=10&access_token=${MAPBOX_TOKEN}`
-                );
-                const revData = await revRes.json();
-                if (!revData.features || revData.features.length === 0) {
-                    results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
-                    return;
-                }
-                data.features = revData.features;
-            }
-
             results.innerHTML = '';
-            data.features.forEach(feat => {
-                const addr = feat.place_name.replace(/, United Kingdom$/i, '');
+            data.addresses.forEach(addr => {
                 const div = document.createElement('div');
                 div.className = 'address-item';
-                div.textContent = addr;
+                div.textContent = addr.formatted;
                 div.addEventListener('click', () => {
-                    // Extract just the street part (before the first comma area)
-                    const parts = addr.split(',');
-                    const streetAddr = parts.length > 1 ? parts.slice(0, -1).join(',').trim() : addr;
-                    document.getElementById('job-address').value = streetAddr;
+                    document.getElementById('job-address').value = addr.formatted;
                     results.style.display = 'none';
                     this.toast('Address selected', 'success');
                 });
@@ -671,7 +652,7 @@ const app = {
             });
         } catch (err) {
             console.warn('Address lookup failed:', err);
-            results.innerHTML = '<div class="address-empty">Address lookup failed - please enter manually</div>';
+            results.innerHTML = '<div class="address-empty">' + (err.message || 'Address lookup failed') + ' - please enter manually</div>';
         } finally {
             btn.disabled = false;
         }
