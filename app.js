@@ -628,37 +628,72 @@ const app = {
 
         try {
             const cleanPostcode = postcode.replace(/\s+/g, '').toUpperCase();
-            const res = await fetch(
-                `https://api.getAddress.io/find/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&expand=true`
-            );
+            let addresses = [];
 
-            if (res.status === 404) throw new Error('Postcode not found');
-            if (res.status === 429) throw new Error('Lookup limit reached for today');
-            if (res.status === 401) throw new Error('Invalid API key');
-            if (!res.ok) throw new Error('Address lookup failed');
+            // Try getAddress.io first (has full Royal Mail PAF data)
+            try {
+                const res = await fetch(
+                    `https://api.getAddress.io/find/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&expand=true`
+                );
+                if (res.status === 429) throw new Error('Lookup limit reached for today');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.addresses && data.addresses.length > 0) {
+                        addresses = data.addresses.map(addr => {
+                            const parts = [
+                                addr.line_1, addr.line_2, addr.line_3, addr.line_4,
+                                addr.locality, addr.town_or_city, addr.county
+                            ].filter(p => p && p.trim() !== '');
+                            return parts.join(', ');
+                        });
+                    }
+                }
+                // If find returned 404, try autocomplete+get flow
+                if (addresses.length === 0 && res.status !== 429) {
+                    const acRes = await fetch(
+                        `https://api.getAddress.io/autocomplete/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&all=true`
+                    );
+                    if (acRes.ok) {
+                        const acData = await acRes.json();
+                        if (acData.suggestions && acData.suggestions.length > 0) {
+                            addresses = acData.suggestions.map(s => s.address);
+                        }
+                    }
+                }
+            } catch (gaErr) {
+                if (gaErr.message === 'Lookup limit reached for today') throw gaErr;
+                console.warn('getAddress.io failed, trying fallback:', gaErr);
+            }
 
-            const data = await res.json();
-
-            if (!data.addresses || data.addresses.length === 0) {
-                results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
+            // Fallback: postcodes.io (free, no key, always works)
+            if (addresses.length === 0) {
+                const pcRes = await fetch(
+                    `https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`
+                );
+                if (pcRes.ok) {
+                    const pcData = await pcRes.json();
+                    if (pcData.result) {
+                        const r = pcData.result;
+                        const area = [r.admin_ward, r.admin_district, r.region].filter(Boolean).join(', ');
+                        results.innerHTML = '<div class="address-empty">Could not load individual addresses.<br>Area: <strong>' +
+                            area + '</strong><br>Please type your full address below.</div>';
+                        return;
+                    }
+                }
+                results.innerHTML = '<div class="address-empty">Postcode not recognised - please enter address manually</div>';
                 return;
             }
 
             results.innerHTML = '';
-            data.addresses.forEach(addr => {
-                const parts = [
-                    addr.line_1, addr.line_2, addr.line_3, addr.line_4,
-                    addr.locality, addr.town_or_city, addr.county
-                ].filter(p => p && p.trim() !== '');
-                const formatted = parts.join(', ');
-
+            const self = this;
+            addresses.forEach(formatted => {
                 const div = document.createElement('div');
                 div.className = 'address-item';
                 div.textContent = formatted;
                 div.addEventListener('click', () => {
                     document.getElementById('job-address').value = formatted;
                     results.style.display = 'none';
-                    this.toast('Address selected', 'success');
+                    self.toast('Address selected', 'success');
                 });
                 results.appendChild(div);
             });
