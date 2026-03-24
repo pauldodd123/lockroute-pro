@@ -363,9 +363,13 @@
                                 </div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group">
+                                <div class="form-group" style="position:relative;">
                                     <label for="job-address">Address</label>
-                                    <input type="text" id="job-address" placeholder="e.g. 10 Downing Street">
+                                    <div class="address-input-row">
+                                        <input type="text" id="job-address" placeholder="e.g. 10 Downing Street" autocomplete="off">
+                                        <button type="button" class="btn btn-primary btn-sm" id="find-address-btn">Find Address</button>
+                                    </div>
+                                    <div id="address-results" class="address-results" style="display:none;"></div>
                                 </div>
                             </div>
                             <div class="form-group">

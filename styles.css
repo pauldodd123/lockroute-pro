@@ -1604,6 +1604,49 @@ body {
     font-size: 13px;
     font-weight: 600;
 }
+.address-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.address-input-row input {
+    flex: 1;
+}
+.address-results {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 50;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+.address-results .address-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+.address-results .address-item:last-child {
+    border-bottom: none;
+}
+.address-results .address-item:hover {
+    background: #f0f9ff;
+}
+.address-results .address-loading,
+.address-results .address-empty {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+}
+
 .vehicle-info {
     margin-top: 10px;
     padding: 16px 18px;
