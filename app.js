@@ -743,16 +743,68 @@ const app = {
     },
 
     // ---- Job Management ----
-    saveJob() {
+    async saveJob() {
         const id = document.getElementById('job-id').value || this.generateId();
         const isEdit = !!document.getElementById('job-id').value;
 
+        const customerName = document.getElementById('customer-name').value.trim();
+        const customerPhone = document.getElementById('customer-phone').value.trim();
+        const jobPostcode = document.getElementById('job-postcode').value.trim().toUpperCase();
+        const jobAddress = document.getElementById('job-address').value.trim();
+
+        // --- Customer linking ---
+        let customerId = null;
+        if (customerName) {
+            if (this._selectedCustomerId) {
+                // User picked from search dropdown
+                customerId = this._selectedCustomerId;
+                const existing = this.customers.find(c => c.id === customerId);
+                if (existing) {
+                    // Update address/postcode to latest job values
+                    existing.postcode = jobPostcode || existing.postcode;
+                    existing.address = jobAddress || existing.address;
+                    existing.updatedAt = new Date().toISOString();
+                    this.persistCustomer(existing);
+                }
+            } else {
+                // Look up by name+phone in memory
+                const found = this.customers.find(
+                    c => c.name.toLowerCase() === customerName.toLowerCase() &&
+                         (c.phone || '') === (customerPhone || '')
+                );
+                if (found) {
+                    customerId = found.id;
+                    found.postcode = jobPostcode || found.postcode;
+                    found.address = jobAddress || found.address;
+                    found.updatedAt = new Date().toISOString();
+                    this.persistCustomer(found);
+                } else {
+                    // Create new customer
+                    const newCustomer = {
+                        id: this.generateCustomerId(),
+                        name: customerName,
+                        phone: customerPhone,
+                        address: jobAddress,
+                        postcode: jobPostcode,
+                        email: '',
+                        notes: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+                    this.customers.push(newCustomer);
+                    this.persistCustomer(newCustomer);
+                    customerId = newCustomer.id;
+                }
+            }
+        }
+
         const job = {
             id,
-            customerName: document.getElementById('customer-name').value.trim(),
-            customerPhone: document.getElementById('customer-phone').value.trim(),
-            postcode: document.getElementById('job-postcode').value.trim().toUpperCase(),
-            address: document.getElementById('job-address').value.trim(),
+            customerName,
+            customerPhone,
+            postcode: jobPostcode,
+            address: jobAddress,
+            customerId,
             type: document.getElementById('job-type').value,
             duration: parseInt(document.getElementById('job-duration').value),
             notes: document.getElementById('job-notes').value.trim(),
@@ -815,6 +867,7 @@ const app = {
         document.getElementById('job-form-title').textContent = 'Edit Job';
         document.getElementById('form-submit-text').textContent = 'Update Job';
         document.getElementById('job-id').value = job.id;
+        this._selectedCustomerId = job.customerId || null;
         document.getElementById('customer-name').value = job.customerName;
         document.getElementById('customer-phone').value = job.customerPhone;
         document.getElementById('job-postcode').value = job.postcode;
@@ -854,6 +907,7 @@ const app = {
         document.getElementById('address-results').style.display = 'none';
         document.getElementById('search-again-link').style.display = 'none';
         this._lastVehicleInfo = null;
+        this._selectedCustomerId = null;
         this.setDefaultDates();
         document.querySelector('input[name="priority"][value="normal"]').checked = true;
     },
