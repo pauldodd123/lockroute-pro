@@ -248,7 +248,7 @@ const app = {
                 localStorage.setItem('lockroute_blocks', JSON.stringify(this.timeBlocks));
             }
 
-            if (cloudCustomers !== null) {
+            if (cloudCustomers !== null && cloudCustomers.length > 0) {
                 this.customers = cloudCustomers;
                 localStorage.setItem('lockroute_customers', JSON.stringify(this.customers));
             }
