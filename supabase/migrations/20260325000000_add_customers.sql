@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
-    CONSTRAINT customers_user_name_phone_unique UNIQUE (user_id, name, phone)
+    CONSTRAINT customers_user_name_phone_unique UNIQUE NULLS NOT DISTINCT (user_id, name, phone)
 );
 
 CREATE INDEX IF NOT EXISTS idx_customers_user_id ON public.customers(user_id);
@@ -30,13 +30,15 @@ CREATE POLICY "Users can delete own customers" ON public.customers FOR DELETE US
 ALTER TABLE public.jobs
     ADD COLUMN IF NOT EXISTS customer_id TEXT REFERENCES public.customers(id) ON DELETE SET NULL;
 
+CREATE INDEX IF NOT EXISTS idx_jobs_customer_id ON public.jobs(customer_id);
+
 -- ============================
 -- Retroactive migration: create customers from existing jobs
 -- (idempotent — safe to re-run)
 -- ============================
 INSERT INTO public.customers (id, user_id, name, phone, address, postcode, created_at, updated_at)
 SELECT DISTINCT ON (user_id, customer_name, customer_phone)
-    'cust_' || extract(epoch from now())::bigint || '_' || substring(md5(random()::text), 1, 5) AS id,
+    'cust_' || md5(user_id::text || customer_name || coalesce(customer_phone, '')) AS id,
     user_id,
     customer_name AS name,
     customer_phone AS phone,
