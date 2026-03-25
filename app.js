@@ -756,8 +756,12 @@ const app = {
         matches.forEach(customer => {
             const div = document.createElement('div');
             div.className = 'address-item customer-result';
-            const label = [customer.name, customer.postcode].filter(Boolean).join(' · ');
-            div.innerHTML = `<span class="customer-result-icon">👤</span> ${label}`;
+            const icon = document.createElement('span');
+            icon.className = 'customer-result-icon';
+            icon.textContent = '👤';
+            const text = document.createTextNode(' ' + [customer.name, customer.postcode].filter(Boolean).join(' · '));
+            div.appendChild(icon);
+            div.appendChild(text);
             div.addEventListener('click', () => {
                 this._selectedCustomerId = customer.id;
                 document.getElementById('job-postcode').value = customer.postcode || '';
