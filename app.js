@@ -349,15 +349,30 @@ const app = {
             this.saveJob();
         });
 
-        // Postcode input formatting + auto address lookup
-        let _postcodeDebounceTimer = null;
+        // Postcode / customer name dual-purpose search
+        let _searchDebounceTimer = null;
         document.getElementById('job-postcode').addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
+            const val = e.target.value;
+            // Only uppercase if it looks like a postcode (starts with letters+digits pattern)
+            if (/^[A-Z0-9\s]*$/i.test(val) && /^[A-Z]{1,2}\d/i.test(val)) {
+                e.target.value = val.toUpperCase();
+            }
             this.updatePostcodeHint(e.target.value);
             this.generateSuggestions();
-            clearTimeout(_postcodeDebounceTimer);
-            if (/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(e.target.value.trim())) {
-                _postcodeDebounceTimer = setTimeout(() => this.findAddressFromPostcode(), 800);
+
+            clearTimeout(_searchDebounceTimer);
+            const trimmed = e.target.value.trim();
+
+            if (/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(trimmed)) {
+                // Looks like a full postcode — do address lookup
+                _searchDebounceTimer = setTimeout(() => this.findAddressFromPostcode(), 800);
+            } else if (trimmed.length >= 2) {
+                // Could be a customer name — search customers
+                _searchDebounceTimer = setTimeout(() => this._searchCustomers(trimmed), 400);
+            } else {
+                // Too short — clear dropdown
+                const results = document.getElementById('address-results');
+                results.style.display = 'none';
             }
         });
 
@@ -719,6 +734,43 @@ const app = {
         });
         results.style.display = 'block';
         searchAgain.style.display = 'inline';
+    },
+
+    _searchCustomers(query) {
+        const results = document.getElementById('address-results');
+        const searchAgain = document.getElementById('search-again-link');
+        searchAgain.style.display = 'none';
+
+        const lower = query.toLowerCase();
+        const matches = this.customers.filter(c =>
+            c.name.toLowerCase().includes(lower) ||
+            (c.postcode && c.postcode.toLowerCase().includes(lower))
+        );
+
+        if (matches.length === 0) {
+            results.style.display = 'none';
+            return;
+        }
+
+        results.innerHTML = '';
+        matches.forEach(customer => {
+            const div = document.createElement('div');
+            div.className = 'address-item customer-result';
+            const label = [customer.name, customer.postcode].filter(Boolean).join(' · ');
+            div.innerHTML = `<span class="customer-result-icon">👤</span> ${label}`;
+            div.addEventListener('click', () => {
+                this._selectedCustomerId = customer.id;
+                document.getElementById('job-postcode').value = customer.postcode || '';
+                document.getElementById('job-address').value = customer.address || '';
+                document.getElementById('customer-name').value = customer.name || '';
+                document.getElementById('customer-phone').value = customer.phone || '';
+                results.style.display = 'none';
+                this.updatePostcodeHint(customer.postcode || '');
+                this.toast(`Customer loaded: ${customer.name}`, 'success');
+            });
+            results.appendChild(div);
+        });
+        results.style.display = 'block';
     },
 
     estimateTravelMinutes(postcodeA, postcodeB) {
