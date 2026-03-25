@@ -61,6 +61,7 @@ function jobToRow(job) {
         time: job.time,
         priority: job.priority || 'normal',
         status: job.status || 'scheduled',
+        customer_id: job.customerId || null,
         created_at: job.createdAt,
         updated_at: new Date().toISOString(),
     };
@@ -85,6 +86,36 @@ function rowToJob(row) {
         time: row.time,
         priority: row.priority,
         status: row.status,
+        customerId: row.customer_id,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+function customerToRow(customer) {
+    return {
+        id: customer.id,
+        user_id: currentUserId,
+        name: customer.name,
+        phone: customer.phone || null,
+        address: customer.address || null,
+        postcode: customer.postcode || null,
+        email: customer.email || null,
+        notes: customer.notes || null,
+        created_at: customer.createdAt,
+        updated_at: new Date().toISOString(),
+    };
+}
+
+function rowToCustomer(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        address: row.address,
+        postcode: row.postcode,
+        email: row.email,
+        notes: row.notes,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };
@@ -154,6 +185,41 @@ const cloudDB = {
             if (error) throw error;
         } catch (e) {
             console.error('Error deleting job from Supabase:', e);
+        }
+    },
+
+    async loadCustomers() {
+        if (!supabaseReady) return null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('customers')
+                .select('*')
+                .order('name', { ascending: true });
+            if (error) throw error;
+            return data.map(rowToCustomer);
+        } catch (e) {
+            console.error('Error loading customers from Supabase:', e);
+            return null;
+        }
+    },
+
+    async saveCustomer(customer) {
+        if (!supabaseReady) return;
+        try {
+            const { error } = await supabaseClient.from('customers').upsert(customerToRow(customer));
+            if (error) throw error;
+        } catch (e) {
+            console.error('Error saving customer to Supabase:', e);
+        }
+    },
+
+    async deleteCustomer(id) {
+        if (!supabaseReady) return;
+        try {
+            const { error } = await supabaseClient.from('customers').delete().eq('id', id);
+            if (error) throw error;
+        } catch (e) {
+            console.error('Error deleting customer from Supabase:', e);
         }
     },
 
