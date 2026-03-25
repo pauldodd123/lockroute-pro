@@ -23,55 +23,53 @@ serve(async (req) => {
 
     const cleanPostcode = postcode.replace(/\s+/g, "").toUpperCase();
 
-    const apiKey = Deno.env.get("GETADDRESS_API_KEY");
+    const apiKey = Deno.env.get("IDEAL_POSTCODES_API_KEY");
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "getAddress API key not configured" }),
+        JSON.stringify({ error: "Ideal Postcodes API key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const response = await fetch(
-      `https://api.getAddress.io/find/${encodeURIComponent(cleanPostcode)}?api-key=${apiKey}&expand=true`,
+      `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(cleanPostcode)}?api_key=${apiKey}`,
       { method: "GET" }
     );
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 404) {
+    const data = await response.json();
+
+    if (!response.ok || data.code !== 2000) {
+      const code = data.code;
+      if (code === 4040) {
         return new Response(
           JSON.stringify({ error: "Postcode not found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (status === 401) {
+      if (code === 4010) {
         return new Response(
           JSON.stringify({ error: "Invalid API key" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (status === 429) {
+      if (code === 4020) {
         return new Response(
-          JSON.stringify({ error: "Lookup limit reached for today" }),
+          JSON.stringify({ error: "Lookup limit reached" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       return new Response(
-        JSON.stringify({ error: `Address lookup error (${status})` }),
-        { status: status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: data.message || `Address lookup error (${response.status})` }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
-
-    const addresses = (data.addresses || []).map((addr: any) => {
+    const addresses = (data.result || []).map((addr: any) => {
       const parts = [
         addr.line_1,
         addr.line_2,
         addr.line_3,
-        addr.line_4,
-        addr.locality,
-        addr.town_or_city,
+        addr.post_town,
         addr.county,
       ].filter((p: string) => p && p.trim() !== "");
 
@@ -79,7 +77,7 @@ serve(async (req) => {
         formatted: parts.join(", "),
         line1: addr.line_1 || "",
         line2: addr.line_2 || "",
-        town: addr.town_or_city || "",
+        town: addr.post_town || "",
         county: addr.county || "",
       };
     });
