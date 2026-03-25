@@ -2851,7 +2851,7 @@ const app = {
         }
 
         list.innerHTML = filtered.map(c => `
-            <div class="customer-row card" data-customer-id="${c.id}">
+            <div class="customer-row card" data-customer-id="${this.escapeHtml(c.id)}">
                 <div class="customer-row-main">
                     <span class="customer-name">${this.escapeHtml(c.name)}</span>
                     <span class="customer-meta">${this.escapeHtml(c.phone || '')}${c.phone && c.postcode ? ' · ' : ''}${this.escapeHtml(c.postcode || '')}</span>
@@ -2883,10 +2883,10 @@ const app = {
 
         body.innerHTML = `
             <div class="customer-detail-fields">
-                ${customer.phone ? `<div class="detail-field"><span class="detail-label">Phone</span><a href="tel:${customer.phone}" class="detail-value">${this.escapeHtml(customer.phone)}</a></div>` : ''}
+                ${customer.phone ? `<div class="detail-field"><span class="detail-label">Phone</span><a href="tel:${this.escapeHtml(customer.phone)}" class="detail-value">${this.escapeHtml(customer.phone)}</a></div>` : ''}
                 ${customer.address ? `<div class="detail-field"><span class="detail-label">Address</span><span class="detail-value">${this.escapeHtml(customer.address)}</span></div>` : ''}
                 ${customer.postcode ? `<div class="detail-field"><span class="detail-label">Postcode</span><span class="detail-value">${this.escapeHtml(customer.postcode)}</span></div>` : ''}
-                ${customer.email ? `<div class="detail-field"><span class="detail-label">Email</span><a href="mailto:${customer.email}" class="detail-value">${this.escapeHtml(customer.email)}</a></div>` : ''}
+                ${customer.email ? `<div class="detail-field"><span class="detail-label">Email</span><a href="mailto:${this.escapeHtml(customer.email)}" class="detail-value">${this.escapeHtml(customer.email)}</a></div>` : ''}
                 ${customer.notes ? `<div class="detail-field"><span class="detail-label">Notes</span><span class="detail-value">${this.escapeHtml(customer.notes)}</span></div>` : ''}
             </div>
         `;
