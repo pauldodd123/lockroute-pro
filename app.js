@@ -371,6 +371,11 @@ const app = {
             this.generateSuggestions();
         });
 
+        // Clear selected customer if user manually edits the name field
+        document.getElementById('customer-name').addEventListener('input', () => {
+            this._selectedCustomerId = null;
+        });
+
         // Search again link — force fresh lookup, bypassing cache
         document.getElementById('search-again-link').addEventListener('click', (e) => {
             e.preventDefault();
