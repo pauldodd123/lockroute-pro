@@ -119,6 +119,8 @@ async function geocodePostcode(postcode) {
 const app = {
     jobs: [],
     _addressCache: {},
+    customers: [],
+    _selectedCustomerId: null,
     timeBlocks: [],
     jotterNotes: [],
     settings: {
@@ -198,6 +200,9 @@ const app = {
 
             const savedJotter = localStorage.getItem('lockroute_jotter');
             if (savedJotter) this.jotterNotes = JSON.parse(savedJotter);
+
+            const savedCustomers = localStorage.getItem('lockroute_customers');
+            if (savedCustomers) this.customers = JSON.parse(savedCustomers);
         } catch (e) {
             console.error('Error loading from localStorage:', e);
         }
@@ -218,8 +223,8 @@ const app = {
                 await Promise.race([cloudDB.migrateFromLocalStorage(this.jobs, this.settings, this.timeBlocks, this.jotterNotes), timeout(5000)]);
             }
 
-            const [cloudJobs, cloudSettings, cloudJotter, cloudBlocks] = await Promise.race([
-                Promise.all([cloudDB.loadJobs(), cloudDB.loadSettings(), cloudDB.loadJotter(), cloudDB.loadBlocks()]),
+            const [cloudJobs, cloudSettings, cloudJotter, cloudBlocks, cloudCustomers] = await Promise.race([
+                Promise.all([cloudDB.loadJobs(), cloudDB.loadSettings(), cloudDB.loadJotter(), cloudDB.loadBlocks(), cloudDB.loadCustomers()]),
                 timeout(5000)
             ]);
 
@@ -243,11 +248,17 @@ const app = {
                 localStorage.setItem('lockroute_blocks', JSON.stringify(this.timeBlocks));
             }
 
+            if (cloudCustomers !== null) {
+                this.customers = cloudCustomers;
+                localStorage.setItem('lockroute_customers', JSON.stringify(this.customers));
+            }
+
             // Re-render with cloud data
             this.updateQuickStats();
             if (this.currentView === 'dashboard') this.renderDashboard();
             if (this.currentView === 'calendar') this.renderCalendar();
             if (this.currentView === 'settings') this.renderSettings();
+            if (this.currentView === 'customers') this.renderCustomers();
         } catch (e) {
             console.warn('Cloud sync skipped:', e.message);
         }
@@ -284,6 +295,24 @@ const app = {
         if (typeof cloudDB !== 'undefined' && supabaseReady) {
             cloudDB.deleteJob(id);
         }
+    },
+
+    persistCustomer(customer) {
+        localStorage.setItem('lockroute_customers', JSON.stringify(this.customers));
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
+            cloudDB.saveCustomer(customer);
+        }
+    },
+
+    removeCustomer(id) {
+        localStorage.setItem('lockroute_customers', JSON.stringify(this.customers));
+        if (typeof cloudDB !== 'undefined' && supabaseReady) {
+            cloudDB.deleteCustomer(id);
+        }
+    },
+
+    generateCustomerId() {
+        return 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     },
 
     // ---- Event Bindings ----
