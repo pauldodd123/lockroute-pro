@@ -286,6 +286,14 @@
                                        class="postcode-input" maxlength="8" autocomplete="off">
                                 <span class="input-hint" id="postcode-hint"></span>
                             </div>
+                            <div class="form-group" style="position:relative;">
+                                <label for="job-address">Address</label>
+                                <div class="address-input-row">
+                                    <input type="text" id="job-address" placeholder="Select from list above or type manually" autocomplete="off">
+                                    <a href="#" id="find-address-btn" class="search-again-link" onclick="event.preventDefault();app.findAddressFromPostcode();">Search again</a>
+                                </div>
+                                <div id="address-results" class="address-results" style="display:none;"></div>
+                            </div>
                         </div>
 
                         <!-- Step 2: What? -->
@@ -360,16 +368,6 @@
                                 <div class="form-group">
                                     <label for="customer-phone">Phone</label>
                                     <input type="tel" id="customer-phone" placeholder="e.g. 07700 900000">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group" style="position:relative;">
-                                    <label for="job-address">Address</label>
-                                    <div class="address-input-row">
-                                        <input type="text" id="job-address" placeholder="e.g. 10 Downing Street" autocomplete="off">
-                                        <button type="button" class="btn btn-primary btn-sm" id="find-address-btn">Find Address</button>
-                                    </div>
-                                    <div id="address-results" class="address-results" style="display:none;"></div>
                                 </div>
                             </div>
                             <div class="form-group">
