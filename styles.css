@@ -1604,14 +1604,6 @@ body {
     font-size: 13px;
     font-weight: 600;
 }
-.address-input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-.address-input-row input {
-    flex: 1;
-}
 .address-results {
     position: absolute;
     left: 0;
@@ -1645,6 +1637,14 @@ body {
     font-size: 13px;
     color: #94a3b8;
     text-align: center;
+}
+.search-again-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .vehicle-info {

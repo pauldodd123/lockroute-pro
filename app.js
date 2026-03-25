@@ -116,11 +116,9 @@ async function geocodePostcode(postcode) {
 }
 
 // ---- Application State ----
-const _addressCache = {};
-
 const app = {
     jobs: [],
-    _postcodeDebounce: null,
+    _addressCache: {},
     timeBlocks: [],
     jotterNotes: [],
     settings: {
@@ -323,14 +321,14 @@ const app = {
         });
 
         // Postcode input formatting + auto address lookup
+        let _postcodeDebounceTimer = null;
         document.getElementById('job-postcode').addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
             this.updatePostcodeHint(e.target.value);
             this.generateSuggestions();
-            clearTimeout(this._postcodeDebounce);
-            const val = e.target.value.trim();
-            if (/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(val)) {
-                this._postcodeDebounce = setTimeout(() => this.findAddressFromPostcode(), 800);
+            clearTimeout(_postcodeDebounceTimer);
+            if (/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(e.target.value.trim())) {
+                _postcodeDebounceTimer = setTimeout(() => this.findAddressFromPostcode(), 800);
             }
         });
 
@@ -344,10 +342,16 @@ const app = {
             this.generateSuggestions();
         });
 
+        // Search again link — force fresh lookup, bypassing cache
+        document.getElementById('search-again-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.findAddressFromPostcode(true);
+        });
+
         // Close address dropdown when clicking outside
         document.addEventListener('click', (e) => {
             const results = document.getElementById('address-results');
-            if (results && !results.contains(e.target) && e.target.id !== 'find-address-btn' && e.target.id !== 'job-postcode') {
+            if (results && !results.contains(e.target) && e.target.id !== 'search-again-link') {
                 results.style.display = 'none';
             }
         });
@@ -617,26 +621,26 @@ const app = {
         });
     },
 
-    async findAddressFromPostcode() {
+    async findAddressFromPostcode(forceRefresh = false) {
         const postcode = document.getElementById('job-postcode').value.trim();
         if (!postcode || postcode.length < 5) {
             this.toast('Enter a full postcode first', 'error');
             return;
         }
 
+        const cacheKey = postcode.toUpperCase().replace(/\s+/g, '');
         const results = document.getElementById('address-results');
-        const cleanPostcode = postcode.replace(/\s/g, '').toUpperCase();
+        const searchAgain = document.getElementById('search-again-link');
+        searchAgain.style.display = 'none';
 
-        // Serve from cache if available
-        if (_addressCache[cleanPostcode]) {
-            this._renderAddressResults(_addressCache[cleanPostcode], results);
+        // Serve from cache if available (unless forced refresh)
+        if (!forceRefresh && this._addressCache[cacheKey]) {
+            this._renderAddressResults(this._addressCache[cacheKey], results, searchAgain);
             return;
         }
 
-        const btn = document.getElementById('find-address-btn');
         results.innerHTML = '<div class="address-loading">Looking up addresses…</div>';
         results.style.display = 'block';
-        if (btn) btn.disabled = true;
 
         try {
             const { data, error } = await supabaseClient.functions.invoke('address-lookup', {
@@ -648,22 +652,22 @@ const app = {
 
             if (!data.addresses || data.addresses.length === 0) {
                 results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
+                searchAgain.style.display = 'inline';
                 return;
             }
 
-            _addressCache[cleanPostcode] = data.addresses;
-            this._renderAddressResults(data.addresses, results);
+            this._addressCache[cacheKey] = data.addresses;
+            this._renderAddressResults(data.addresses, results, searchAgain);
         } catch (err) {
             console.warn('Address lookup failed:', err);
             results.innerHTML = '<div class="address-empty">' + (err.message || 'Address lookup failed') + ' - please enter manually</div>';
-        } finally {
-            if (btn) btn.disabled = false;
+            results.style.display = 'block';
+            searchAgain.style.display = 'inline';
         }
     },
 
-    _renderAddressResults(addresses, resultsEl) {
-        resultsEl.innerHTML = '';
-        resultsEl.style.display = 'block';
+    _renderAddressResults(addresses, results, searchAgain) {
+        results.innerHTML = '';
         const self = this;
         addresses.forEach(addr => {
             const div = document.createElement('div');
@@ -673,11 +677,14 @@ const app = {
                 const parts = [addr.line1, addr.line2, addr.town, addr.county]
                     .filter(p => p && p.trim() !== '');
                 document.getElementById('job-address').value = parts.join(', ');
-                resultsEl.style.display = 'none';
+                results.style.display = 'none';
+                searchAgain.style.display = 'inline';
                 self.toast('Address selected', 'success');
             });
-            resultsEl.appendChild(div);
+            results.appendChild(div);
         });
+        results.style.display = 'block';
+        searchAgain.style.display = 'inline';
     },
 
     estimateTravelMinutes(postcodeA, postcodeB) {
@@ -816,6 +823,7 @@ const app = {
         document.getElementById('job-price').value = '';
         document.getElementById('vehicle-info').style.display = 'none';
         document.getElementById('address-results').style.display = 'none';
+        document.getElementById('search-again-link').style.display = 'none';
         this._lastVehicleInfo = null;
         this.setDefaultDates();
         document.querySelector('input[name="priority"][value="normal"]').checked = true;
