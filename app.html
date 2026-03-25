@@ -97,6 +97,10 @@
                     <span class="nav-icon">🗺️</span>
                     <span class="nav-label">Route Planner</span>
                 </li>
+                <li class="nav-item" data-view="customers">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Customers</span>
+                </li>
                 <li class="nav-item" data-view="jotter">
                     <span class="nav-icon">📝</span>
                     <span class="nav-label">Jotter</span>
@@ -461,6 +465,78 @@
                         <div class="empty-state">
                             <span class="empty-icon">📝</span>
                             <p>No notes yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CUSTOMERS VIEW -->
+            <section id="view-customers" class="view">
+                <div class="view-header">
+                    <h1>Customers</h1>
+                </div>
+                <div class="customers-container">
+                    <div class="card customers-search-card">
+                        <input type="search" id="customers-search" placeholder="Search by name or postcode…" class="customers-search-input">
+                    </div>
+                    <div id="customers-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">👥</span>
+                            <p>No customers yet</p>
+                            <p class="empty-sub">Customers are created automatically when you save a job with a customer name.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Detail Panel (shown inline below list) -->
+                <div id="customer-detail-panel" class="customer-detail-panel" style="display:none;">
+                    <div class="card customer-detail-card">
+                        <div class="customer-detail-header">
+                            <h2 id="detail-customer-name"></h2>
+                            <div class="customer-detail-actions">
+                                <button class="btn btn-outline btn-sm" id="detail-edit-btn">Edit</button>
+                                <button class="btn btn-outline btn-danger btn-sm" id="detail-delete-btn">Delete</button>
+                                <button class="btn btn-outline btn-sm" id="detail-close-btn">✕</button>
+                            </div>
+                        </div>
+                        <div id="customer-detail-body"></div>
+                        <div id="customer-edit-form" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Name</label>
+                                    <input type="text" id="edit-customer-name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone</label>
+                                    <input type="tel" id="edit-customer-phone">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input type="text" id="edit-customer-address">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Postcode</label>
+                                    <input type="text" id="edit-customer-postcode">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="edit-customer-email">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="edit-customer-notes" rows="2"></textarea>
+                            </div>
+                            <div class="form-row" style="justify-content:flex-end;gap:8px;">
+                                <button class="btn btn-outline btn-sm" id="edit-customer-cancel">Cancel</button>
+                                <button class="btn btn-primary btn-sm" id="edit-customer-save">Save</button>
+                            </div>
+                        </div>
+                        <div id="customer-jobs-history">
+                            <h3 class="customer-section-title">Job History</h3>
+                            <div id="customer-jobs-list"></div>
                         </div>
                     </div>
                 </div>
