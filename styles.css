@@ -975,6 +975,8 @@ body {
 }
 
 .form-section {
+    position: relative;
+    z-index: 1;
     background: var(--bg-card);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
@@ -984,6 +986,10 @@ body {
     box-shadow: var(--shadow);
     animation: fadeSlideUp 0.4s ease both;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.form-section:first-child {
+    z-index: 10;
 }
 
 .form-section:nth-child(2) { animation-delay: 0.05s; }
