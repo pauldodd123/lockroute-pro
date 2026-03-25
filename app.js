@@ -73,7 +73,6 @@ const POSTCODE_AREAS = {
 const _geocodeCache = {};
 // Public token (pk.*) — safe for client-side use
 const MAPBOX_TOKEN = ['pk.eyJ1IjoicGF1bGRvZGQxMjMiLC', 'JhIjoiY21nZ3RocWlxMGZwMDJsczl0NXUxdGlndSJ9', '.kuA0Ty6VTDTaIqmzvKkNag'].join('');
-const GETADDRESS_API_KEY = 'IeBdgvkkPEejT196TmyvyQ51146';
 
 function getNavigationUrl(job) {
     const parts = [job.address, job.postcode].filter(Boolean);
@@ -627,56 +626,28 @@ const app = {
         btn.disabled = true;
 
         try {
-            const cleanPostcode = postcode.replace(/\s+/g, ' ').trim().toUpperCase();
+            const { data, error } = await supabaseClient.functions.invoke('address-lookup', {
+                body: { postcode }
+            });
 
-            // Use getAddress.io autocomplete API (current documented endpoint)
-            const res = await fetch(
-                `https://api.getAddress.io/autocomplete/${encodeURIComponent(cleanPostcode)}?api-key=${GETADDRESS_API_KEY}&all=true`
-            );
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
 
-            console.log('getAddress.io autocomplete status:', res.status);
-
-            if (res.status === 429) throw new Error('Lookup limit reached for today');
-            if (res.status === 401) throw new Error('API key not authorised - check getAddress.io account');
-            if (!res.ok) {
-                const errText = await res.text();
-                console.warn('getAddress.io error:', res.status, errText);
-                throw new Error('Address lookup failed (' + res.status + ')');
-            }
-
-            const data = await res.json();
-            console.log('getAddress.io response:', data);
-
-            if (!data.suggestions || data.suggestions.length === 0) {
+            if (!data.addresses || data.addresses.length === 0) {
                 results.innerHTML = '<div class="address-empty">No addresses found for this postcode</div>';
                 return;
             }
 
             results.innerHTML = '';
             const self = this;
-            data.suggestions.forEach(suggestion => {
+            data.addresses.forEach(addr => {
                 const div = document.createElement('div');
                 div.className = 'address-item';
-                div.textContent = suggestion.address;
-                div.addEventListener('click', async () => {
-                    // Get full address details when clicked
-                    try {
-                        const detailRes = await fetch(
-                            `https://api.getAddress.io/get/${suggestion.id}?api-key=${GETADDRESS_API_KEY}`
-                        );
-                        if (detailRes.ok) {
-                            const detail = await detailRes.json();
-                            const parts = [
-                                detail.line_1, detail.line_2, detail.line_3, detail.line_4,
-                                detail.locality, detail.town_or_city, detail.county
-                            ].filter(p => p && p.trim() !== '');
-                            document.getElementById('job-address').value = parts.join(', ');
-                        } else {
-                            document.getElementById('job-address').value = suggestion.address;
-                        }
-                    } catch {
-                        document.getElementById('job-address').value = suggestion.address;
-                    }
+                div.textContent = addr.formatted;
+                div.addEventListener('click', () => {
+                    const parts = [addr.line1, addr.line2, addr.town, addr.county]
+                        .filter(p => p && p.trim() !== '');
+                    document.getElementById('job-address').value = parts.join(', ');
                     results.style.display = 'none';
                     self.toast('Address selected', 'success');
                 });
