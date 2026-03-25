@@ -485,6 +485,11 @@ const app = {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.closeModal();
         });
+
+        // Customers search
+        document.getElementById('customers-search')?.addEventListener('input', () => {
+            this.renderCustomers();
+        });
     },
 
     // ---- View Management ----
@@ -521,6 +526,9 @@ const app = {
                 break;
             case 'jotter': this.renderJotter(); break;
             case 'settings': this.renderSettings(); break;
+            case 'customers':
+                this.renderCustomers();
+                break;
         }
     },
 
@@ -975,6 +983,11 @@ const app = {
 
     generateId() {
         return 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    },
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     },
 
     getJobsForDate(dateStr) {
@@ -2813,6 +2826,172 @@ const app = {
             toast.style.animation = 'toastIn 0.3s ease reverse';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    },
+
+    renderCustomers() {
+        const searchVal = (document.getElementById('customers-search')?.value || '').toLowerCase();
+        const list = document.getElementById('customers-list');
+        if (!list) return;
+
+        let filtered = [...this.customers].sort((a, b) => a.name.localeCompare(b.name));
+        if (searchVal) {
+            filtered = filtered.filter(c =>
+                c.name.toLowerCase().includes(searchVal) ||
+                (c.postcode && c.postcode.toLowerCase().includes(searchVal))
+            );
+        }
+
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="empty-state">
+                <span class="empty-icon">👥</span>
+                <p>${searchVal ? 'No customers match your search' : 'No customers yet'}</p>
+                ${!searchVal ? '<p class="empty-sub">Customers are created automatically when you save a job.</p>' : ''}
+            </div>`;
+            return;
+        }
+
+        list.innerHTML = filtered.map(c => `
+            <div class="customer-row card" data-customer-id="${c.id}">
+                <div class="customer-row-main">
+                    <span class="customer-name">${this.escapeHtml(c.name)}</span>
+                    <span class="customer-meta">${this.escapeHtml(c.phone || '')}${c.phone && c.postcode ? ' · ' : ''}${this.escapeHtml(c.postcode || '')}</span>
+                </div>
+                <span class="customer-row-arrow">›</span>
+            </div>
+        `).join('');
+
+        list.querySelectorAll('.customer-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const id = row.dataset.customerId;
+                this.openCustomerDetail(id);
+            });
+        });
+    },
+
+    openCustomerDetail(id) {
+        const customer = this.customers.find(c => c.id === id);
+        if (!customer) return;
+
+        const panel = document.getElementById('customer-detail-panel');
+        const body = document.getElementById('customer-detail-body');
+        const editForm = document.getElementById('customer-edit-form');
+        const jobsList = document.getElementById('customer-jobs-list');
+
+        document.getElementById('detail-customer-name').textContent = customer.name;
+        editForm.style.display = 'none';
+        body.style.display = '';
+
+        body.innerHTML = `
+            <div class="customer-detail-fields">
+                ${customer.phone ? `<div class="detail-field"><span class="detail-label">Phone</span><a href="tel:${customer.phone}" class="detail-value">${this.escapeHtml(customer.phone)}</a></div>` : ''}
+                ${customer.address ? `<div class="detail-field"><span class="detail-label">Address</span><span class="detail-value">${this.escapeHtml(customer.address)}</span></div>` : ''}
+                ${customer.postcode ? `<div class="detail-field"><span class="detail-label">Postcode</span><span class="detail-value">${this.escapeHtml(customer.postcode)}</span></div>` : ''}
+                ${customer.email ? `<div class="detail-field"><span class="detail-label">Email</span><a href="mailto:${customer.email}" class="detail-value">${this.escapeHtml(customer.email)}</a></div>` : ''}
+                ${customer.notes ? `<div class="detail-field"><span class="detail-label">Notes</span><span class="detail-value">${this.escapeHtml(customer.notes)}</span></div>` : ''}
+            </div>
+        `;
+
+        // Job history
+        const customerJobs = this.jobs
+            .filter(j => j.customerId === id)
+            .sort((a, b) => b.date.localeCompare(a.date));
+
+        if (customerJobs.length === 0) {
+            jobsList.innerHTML = '<p class="empty-sub" style="padding:8px 0;">No jobs yet</p>';
+        } else {
+            jobsList.innerHTML = customerJobs.map(job => {
+                const jobType = JOB_TYPES[job.type] || JOB_TYPES['other'];
+                return `<div class="customer-job-row" data-job-id="${job.id}">
+                    <span class="customer-job-icon">${jobType.icon}</span>
+                    <div class="customer-job-info">
+                        <span class="customer-job-type">${jobType.label}</span>
+                        <span class="customer-job-date">${this.getFriendlyDateTime(job.date, job.time)}</span>
+                    </div>
+                    <span class="customer-job-status status-${job.status}">${job.status}</span>
+                </div>`;
+            }).join('');
+
+            jobsList.querySelectorAll('.customer-job-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    this.showJobModal(row.dataset.jobId);
+                });
+            });
+        }
+
+        panel.style.display = 'block';
+        panel.dataset.customerId = id;
+
+        // Wire up action buttons
+        document.getElementById('detail-close-btn').onclick = () => {
+            panel.style.display = 'none';
+        };
+
+        document.getElementById('detail-edit-btn').onclick = () => {
+            this.openCustomerEditForm(customer);
+        };
+
+        document.getElementById('detail-delete-btn').onclick = () => {
+            if (confirm(`Delete customer "${customer.name}"? Their jobs will not be deleted.`)) {
+                this.deleteCustomer(id);
+            }
+        };
+    },
+
+    openCustomerEditForm(customer) {
+        const editForm = document.getElementById('customer-edit-form');
+        const body = document.getElementById('customer-detail-body');
+        body.style.display = 'none';
+        editForm.style.display = 'block';
+
+        document.getElementById('edit-customer-name').value = customer.name || '';
+        document.getElementById('edit-customer-phone').value = customer.phone || '';
+        document.getElementById('edit-customer-address').value = customer.address || '';
+        document.getElementById('edit-customer-postcode').value = customer.postcode || '';
+        document.getElementById('edit-customer-email').value = customer.email || '';
+        document.getElementById('edit-customer-notes').value = customer.notes || '';
+
+        document.getElementById('edit-customer-cancel').onclick = () => {
+            editForm.style.display = 'none';
+            body.style.display = '';
+        };
+
+        document.getElementById('edit-customer-save').onclick = () => {
+            const updatedName = document.getElementById('edit-customer-name').value.trim();
+            if (!updatedName) { this.toast('Name is required', 'error'); return; }
+
+            customer.name = updatedName;
+            customer.phone = document.getElementById('edit-customer-phone').value.trim();
+            customer.address = document.getElementById('edit-customer-address').value.trim();
+            customer.postcode = document.getElementById('edit-customer-postcode').value.trim().toUpperCase();
+            customer.email = document.getElementById('edit-customer-email').value.trim();
+            customer.notes = document.getElementById('edit-customer-notes').value.trim();
+            customer.updatedAt = new Date().toISOString();
+
+            this.persistCustomer(customer);
+            this.toast('Customer updated', 'success');
+            this.openCustomerDetail(customer.id);
+            this.renderCustomers();
+        };
+    },
+
+    deleteCustomer(id) {
+        const idx = this.customers.findIndex(c => c.id === id);
+        if (idx === -1) return;
+        const name = this.customers[idx].name;
+        this.customers.splice(idx, 1);
+
+        // Unlink jobs that referenced this customer
+        this.jobs.forEach(j => {
+            if (j.customerId === id) {
+                j.customerId = null;
+                this.persistJob(j);
+            }
+        });
+
+        this.removeCustomer(id);
+        document.getElementById('customer-detail-panel').style.display = 'none';
+        this.toast(`Customer "${name}" deleted`, 'info');
+        this.renderCustomers();
     },
 };
 
