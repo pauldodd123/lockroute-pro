@@ -576,6 +576,12 @@ body {
     color: var(--text-muted);
 }
 
+.upcoming-vehicle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
 /* Next Slot */
 .slot-display {
     padding: 20px;

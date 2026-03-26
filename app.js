@@ -1422,6 +1422,12 @@ const app = {
             const ampm = hour >= 12 ? 'PM' : 'AM';
             const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
 
+            const timelineVehicleStr = (() => {
+                const v = job.vehicleInfo;
+                if (!v || !v.make) return job.vehicleReg || '';
+                const parts = [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean);
+                return parts.join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
+            })();
             html += `
                 <div class="timeline-item" onclick="app.showJobModal('${job.id}')">
                     <div class="timeline-dot ${this.getJobColorClass(job)}"></div>
@@ -1435,6 +1441,7 @@ const app = {
                         <div class="timeline-meta">
                             <span>⏱️ ${job.duration} min</span>
                             ${job.address ? `<span>📍 ${job.address}</span>` : ''}
+                            ${timelineVehicleStr ? `<span>🚗 ${timelineVehicleStr}</span>` : ''}
                             ${job.status === 'completed' ? '<span class="status-badge status-completed">Done</span>' : ''}
                         </div>
                     </div>
@@ -1483,7 +1490,12 @@ const app = {
             return;
         }
 
-        container.innerHTML = upcoming.map(job => `
+        container.innerHTML = upcoming.map(job => {
+            const v = job.vehicleInfo;
+            const vehicleStr = v && v.make
+                ? [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean).join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '')
+                : (job.vehicleReg || '');
+            return `
             <div class="upcoming-item" onclick="app.showJobModal('${job.id}')">
                 <div class="upcoming-date">
                     <div class="upcoming-day">${this.getDayName(job.date)}</div>
@@ -1492,9 +1504,10 @@ const app = {
                 <div class="upcoming-info">
                     <div class="upcoming-title">${this.getJobIcon(job)} ${this.getJobLabel(job)}</div>
                     <div class="upcoming-detail">${this.formatTime(job.time)} - ${job.postcode} ${job.customerName ? '- ' + job.customerName : ''}</div>
+                    ${vehicleStr ? `<div class="upcoming-vehicle">🚗 ${vehicleStr}</div>` : ''}
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     },
 
     renderNextSlot() {
