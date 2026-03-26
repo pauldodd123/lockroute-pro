@@ -45,8 +45,8 @@ function jobToRow(job) {
     return {
         id: job.id,
         user_id: currentUserId,
-        customer_name: job.customerName,
-        customer_phone: job.customerPhone,
+        customer_name: job.customerName || null,
+        customer_phone: job.customerPhone || null,
         postcode: job.postcode,
         address: job.address,
         type: job.type,
