@@ -357,7 +357,6 @@ const app = {
             if (/^[A-Z0-9\s]*$/i.test(val) && /^[A-Z]{1,2}\d/i.test(val)) {
                 e.target.value = val.toUpperCase();
             }
-            this.updatePostcodeHint(e.target.value);
             this.generateSuggestions();
 
             clearTimeout(_searchDebounceTimer);
@@ -651,33 +650,6 @@ const app = {
         return await geocodePostcode(postcode);
     },
 
-    updatePostcodeHint(postcode) {
-        const hint = document.getElementById('postcode-hint');
-        if (!postcode || postcode.trim().length < 2) {
-            hint.textContent = '';
-            return;
-        }
-        // Show immediate result from cache/static, then upgrade with geocode
-        const cached = this.getPostcodeInfo(postcode);
-        if (cached) {
-            hint.textContent = `📍 ${cached.name}`;
-            hint.style.color = '#10b981';
-        } else {
-            hint.textContent = 'Looking up…';
-            hint.style.color = '#94a3b8';
-        }
-        // Async geocode for accurate result
-        geocodePostcode(postcode).then(info => {
-            if (info) {
-                hint.textContent = `📍 ${info.name}`;
-                hint.style.color = '#10b981';
-            } else if (postcode.trim().length > 1) {
-                hint.textContent = 'Area not recognised - travel times will use defaults';
-                hint.style.color = '#f59e0b';
-            }
-        });
-    },
-
     async findAddressFromPostcode(forceRefresh = false) {
         const postcode = document.getElementById('job-postcode').value.trim();
         if (!postcode || postcode.length < 5) {
@@ -777,7 +749,6 @@ const app = {
                 document.getElementById('customer-name').value = customer.name || '';
                 document.getElementById('customer-phone').value = customer.phone || '';
                 results.style.display = 'none';
-                this.updatePostcodeHint(customer.postcode || '');
                 this.toast(`Customer loaded: ${customer.name}`, 'success');
             });
             results.appendChild(div);
@@ -961,7 +932,6 @@ const app = {
             vInfo.style.display = 'none';
         }
 
-        this.updatePostcodeHint(job.postcode);
     },
 
     resetJobForm() {
@@ -969,7 +939,6 @@ const app = {
         document.getElementById('job-id').value = '';
         document.getElementById('job-form-title').textContent = 'New Job';
         document.getElementById('form-submit-text').textContent = 'Schedule Job';
-        document.getElementById('postcode-hint').textContent = '';
         document.getElementById('job-reg').value = '';
         document.getElementById('job-price').value = '';
         document.getElementById('vehicle-info').style.display = 'none';
