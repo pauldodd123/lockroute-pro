@@ -404,11 +404,11 @@ const app = {
             }
         });
 
-        // Reg lookup
-        document.getElementById('lookup-reg-btn').addEventListener('click', () => this.lookupVehicleReg());
+        // Reg lookup — auto on blur, uppercase on input
         document.getElementById('job-reg').addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase();
         });
+        document.getElementById('job-reg').addEventListener('blur', () => this.lookupVehicleReg());
 
         // Price / VAT
         document.getElementById('job-price').addEventListener('input', () => this.updateVatBreakdown());
@@ -2808,20 +2808,15 @@ const app = {
     // ---- Vehicle Reg Lookup ----
     async lookupVehicleReg() {
         const reg = document.getElementById('job-reg').value.trim().replace(/\s+/g, '').toUpperCase();
-        if (!reg) {
-            this.toast('Enter a registration number first', 'error');
-            return;
-        }
+        if (!reg) return;
 
         // Format reg with space for display (e.g. AB12CDE -> AB12 CDE)
         const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
 
         const vInfo = document.getElementById('vehicle-info');
-        const btn = document.getElementById('lookup-reg-btn');
 
         vInfo.innerHTML = `Looking up <strong>${displayReg}</strong>…`;
         vInfo.style.display = 'block';
-        if (btn) btn.disabled = true;
 
         try {
             const { data, error } = await supabaseClient.functions.invoke('vehicle-lookup', {
@@ -2854,8 +2849,6 @@ const app = {
             const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
             vInfo.innerHTML = `<div class="vehicle-card-header"><span class="vehicle-reg-plate">${displayReg}</span></div><div class="vehicle-links"><a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a><a href="${dvlaUrl}" target="_blank" rel="noopener">DVLA check ↗</a></div>`;
             this.toast(err.message || 'Lookup failed', 'error');
-        } finally {
-            if (btn) btn.disabled = false;
         }
     },
 
