@@ -2327,10 +2327,13 @@ const app = {
                     <a href="${getNavigationUrl(job)}" class="navigate-btn" target="_blank" rel="noopener noreferrer">🗺️ Navigate</a>
                 </span>
             </div>
-            ${job.vehicleReg ? `<div class="modal-detail-row">
-                <span class="modal-detail-label">Vehicle Reg</span>
-                <span class="modal-detail-value">${job.vehicleReg}</span>
-            </div>` : ''}
+            ${job.vehicleReg ? (() => {
+                const cleanReg = job.vehicleReg.replace(/\s+/g, '').toUpperCase();
+                const inner = job.vehicleInfo
+                    ? (this.formatVehicleInfo(job.vehicleInfo) + this._vehicleModalLinks(cleanReg, job.id))
+                    : `<div style="color:var(--text-muted);font-size:13px;">Looking up vehicle…</div>`;
+                return `<div id="modal-vehicle-section" class="vehicle-info">${inner}</div>`;
+            })() : ''}
             ${job.priceQuoted ? (() => {
                 const net = parseFloat(job.priceQuoted);
                 if (job.vatApplied && job.vatRate) {
@@ -2356,6 +2359,11 @@ const app = {
             })() : ''}
             ${job.notes ? `<div class="modal-notes"><strong>Notes:</strong> ${job.notes}</div>` : ''}
         `;
+
+        // Auto-fetch vehicle info if reg exists but no cached info
+        if (job.vehicleReg && !job.vehicleInfo) {
+            this._autoFetchVehicleInfo(job);
+        }
 
         // Wire up buttons
         document.getElementById('modal-delete').onclick = () => {
@@ -2741,6 +2749,74 @@ const app = {
         } finally {
             if (btn) btn.disabled = false;
         }
+    },
+
+    _vehicleModalLinks(reg, jobId) {
+        const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
+        const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
+        return `<div class="vehicle-links">
+            <a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a>
+            <a href="#" onclick="app.refreshModalVehicleInfo('${jobId}');return false;">Refresh ↺</a>
+        </div>`;
+    },
+
+    async _autoFetchVehicleInfo(job) {
+        const reg = job.vehicleReg.replace(/\s+/g, '').toUpperCase();
+        const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('vehicle-lookup', {
+                body: { registration: reg }
+            });
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
+            const vehicleInfo = {
+                registrationNumber: data.registration || reg,
+                make: data.make,
+                colour: data.colour,
+                yearOfManufacture: data.yearOfManufacture,
+                fuelType: data.fuelType,
+                motStatus: data.motStatus,
+                taxStatus: data.taxStatus,
+            };
+
+            // Save to job in memory and persist
+            const idx = this.jobs.findIndex(j => j.id === job.id);
+            if (idx !== -1) this.jobs[idx].vehicleInfo = vehicleInfo;
+            job.vehicleInfo = vehicleInfo;
+            this.persistJob(idx !== -1 ? this.jobs[idx] : job);
+
+            // Update modal section if still open
+            const section = document.getElementById('modal-vehicle-section');
+            if (section) {
+                section.innerHTML = this.formatVehicleInfo(vehicleInfo) + this._vehicleModalLinks(reg, job.id);
+            }
+        } catch (err) {
+            const section = document.getElementById('modal-vehicle-section');
+            if (section) {
+                const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
+                const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
+                section.innerHTML = `<div class="vehicle-card-header"><span class="vehicle-reg-plate">${displayReg}</span></div>
+                    <div class="vehicle-links">
+                        <a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a>
+                        <a href="${dvlaUrl}" target="_blank" rel="noopener">DVLA check ↗</a>
+                        <a href="#" onclick="app.refreshModalVehicleInfo('${job.id}');return false;">Retry ↺</a>
+                    </div>`;
+            }
+        }
+    },
+
+    async refreshModalVehicleInfo(jobId) {
+        const job = this.jobs.find(j => j.id === jobId);
+        if (!job || !job.vehicleReg) return;
+        const section = document.getElementById('modal-vehicle-section');
+        if (section) {
+            const reg = job.vehicleReg.replace(/\s+/g, '').toUpperCase();
+            const displayReg = reg.length >= 5 ? reg.slice(0, -3) + ' ' + reg.slice(-3) : reg;
+            section.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">Refreshing ${displayReg}…</div>`;
+        }
+        job.vehicleInfo = null;
+        await this._autoFetchVehicleInfo(job);
     },
 
     formatVehicleInfo(info) {
