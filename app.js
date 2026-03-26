@@ -669,6 +669,7 @@ const app = {
         }
 
         results.innerHTML = '<div class="address-loading">Looking up addresses…</div>';
+        this._positionDropdown(results);
         results.style.display = 'block';
 
         try {
@@ -690,9 +691,32 @@ const app = {
         } catch (err) {
             console.warn('Address lookup failed:', err);
             results.innerHTML = '<div class="address-empty">' + (err.message || 'Address lookup failed') + ' - please enter manually</div>';
+            this._positionDropdown(results);
             results.style.display = 'block';
             searchAgain.style.display = 'inline';
         }
+    },
+
+    // On mobile, use fixed positioning so the dropdown floats above the keyboard,
+    // leaving the postcode input visible below it.
+    _positionDropdown(results) {
+        const vv = window.visualViewport;
+        if (window.innerWidth > 768 || !vv) {
+            results.style.position = '';
+            results.style.bottom = '';
+            results.style.left = '';
+            results.style.right = '';
+            results.style.top = '';
+            results.style.width = '';
+            return;
+        }
+        const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        results.style.position = 'fixed';
+        results.style.bottom = (keyboardHeight + 8) + 'px';
+        results.style.top = 'auto';
+        results.style.left = '12px';
+        results.style.right = '12px';
+        results.style.width = 'auto';
     },
 
     _renderAddressResults(addresses, results, searchAgain) {
@@ -712,6 +736,7 @@ const app = {
             });
             results.appendChild(div);
         });
+        this._positionDropdown(results);
         results.style.display = 'block';
         searchAgain.style.display = 'inline';
     },
@@ -753,6 +778,7 @@ const app = {
             });
             results.appendChild(div);
         });
+        this._positionDropdown(results);
         results.style.display = 'block';
     },
 
