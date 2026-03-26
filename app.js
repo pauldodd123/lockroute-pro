@@ -1425,8 +1425,7 @@ const app = {
             const timelineVehicleStr = (() => {
                 const v = job.vehicleInfo;
                 if (!v || !v.make) return job.vehicleReg || '';
-                const parts = [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean);
-                return parts.join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
+                return v.make + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
             })();
             html += `
                 <div class="timeline-item" onclick="app.showJobModal('${job.id}')">
@@ -1493,7 +1492,7 @@ const app = {
         container.innerHTML = upcoming.map(job => {
             const v = job.vehicleInfo;
             const vehicleStr = v && v.make
-                ? [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean).join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '')
+                ? v.make + (job.vehicleReg ? ` · ${job.vehicleReg}` : '')
                 : (job.vehicleReg || '');
             return `
             <div class="upcoming-item" onclick="app.showJobModal('${job.id}')">
@@ -2162,8 +2161,7 @@ const app = {
             const vehicleStr = (() => {
                 const v = job.vehicleInfo;
                 if (!v || !v.make) return job.vehicleReg || '';
-                const parts = [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean);
-                return parts.join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
+                return v.make + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
             })();
             html += `
                 <div class="route-item" onclick="app.showJobModal('${job.id}')" style="cursor:pointer;">
@@ -2943,7 +2941,7 @@ const app = {
     formatVehicleInfo(info) {
         if (!info) return '';
         const reg = info.registrationNumber || '';
-        const makeText = [info.make, info.colour, info.yearOfManufacture ? `(${info.yearOfManufacture})` : ''].filter(Boolean).join(' ');
+        const makeText = info.make || '';
 
         let html = `<div class="vehicle-card-header">`;
         html += `<span class="vehicle-reg-plate">${reg}</span>`;
