@@ -1,30 +1,20 @@
 /**
  * Backfill vehicleInfo for all jobs that have a vehicleReg but no vehicleInfo.
  *
+ * Uses the service role key to bypass RLS — reads/updates all users' jobs.
+ *
  * Usage:
- *   SUPABASE_EMAIL=you@example.com SUPABASE_PASSWORD=yourpassword node scripts/backfill-vehicle-info.mjs
+ *   node scripts/backfill-vehicle-info.mjs
  */
 
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://klnerdcxmhrqqrwrleez.supabase.co';
-const SUPABASE_ANON_KEY = [
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
-    'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsbmVyZGN4bWhycXFyd3JsZWV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1MzE1MTEsImV4cCI6MjA2MjEwNzUxMX0',
-    'q0LnY6FdQZm3SmmbFW0Lsz7oZabv4AINEwlWhuTML5A',
-].join('.');
+const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsbmVyZGN4bWhycXFyd3JsZWV6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjUzMTUxMSwiZXhwIjoyMDYyMTA3NTExfQ.iYT1bKGGe6bSO_mHeaSlCmOmaUVgBh1rlN8VvQnldPw';
 
 const DELAY_MS = 500; // delay between DVLA API calls to avoid rate limiting
 
-const email = process.env.SUPABASE_EMAIL;
-const password = process.env.SUPABASE_PASSWORD;
-
-if (!email || !password) {
-    console.error('Error: set SUPABASE_EMAIL and SUPABASE_PASSWORD environment variables');
-    process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -48,15 +38,6 @@ async function lookupReg(reg) {
 }
 
 async function main() {
-    // Sign in
-    console.log(`Signing in as ${email}…`);
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
-        console.error('Auth failed:', authError.message);
-        process.exit(1);
-    }
-    console.log('Signed in.\n');
-
     // Fetch all jobs with a vehicle_reg but null/empty vehicle_info
     const { data: jobs, error: fetchError } = await supabase
         .from('jobs')
