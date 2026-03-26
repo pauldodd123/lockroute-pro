@@ -2146,6 +2146,12 @@ const app = {
                 }
             }
 
+            const vehicleStr = (() => {
+                const v = job.vehicleInfo;
+                if (!v || !v.make) return job.vehicleReg || '';
+                const parts = [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean);
+                return parts.join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
+            })();
             html += `
                 <div class="route-item" onclick="app.showJobModal('${job.id}')" style="cursor:pointer;">
                     <div class="route-number">${i + 1}</div>
@@ -2153,6 +2159,7 @@ const app = {
                         <h4>${this.getJobIcon(job)} ${this.getJobLabel(job)} ${job.status === 'completed' ? '✅' : ''}</h4>
                         <p>${this.formatTime(job.time)} - ${job.duration} min - ${job.postcode}</p>
                         <p>${job.customerName || ''} ${job.address ? '- ' + job.address : ''}</p>
+                        ${vehicleStr ? `<p class="route-vehicle">${vehicleStr}</p>` : ''}
                     </div>
                 </div>
             `;

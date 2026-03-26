@@ -1359,6 +1359,11 @@ body {
     color: var(--text-muted);
 }
 
+.route-vehicle {
+    font-weight: 600;
+    color: var(--text) !important;
+}
+
 .route-travel {
     display: flex;
     align-items: center;
