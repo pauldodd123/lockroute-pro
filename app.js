@@ -2318,13 +2318,13 @@ const app = {
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Phone</span>
-                <span class="modal-detail-value">${job.customerPhone ? `<a href="tel:${job.customerPhone}">${job.customerPhone}</a>` : '-'}</span>
+                <span class="modal-detail-value">${job.customerPhone ? `<a href="tel:${job.customerPhone}" class="call-btn">📞 ${job.customerPhone}</a>` : '-'}</span>
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Location</span>
                 <span class="modal-detail-value">
-                    ${job.postcode}${job.address ? ' - ' + job.address : ''}
-                    <a href="${getNavigationUrl(job)}" class="navigate-link" target="_blank" rel="noopener noreferrer">Navigate →</a>
+                    ${job.postcode}${job.address ? ' · ' + job.address : ''}
+                    <a href="${getNavigationUrl(job)}" class="navigate-btn" target="_blank" rel="noopener noreferrer">🗺️ Navigate</a>
                 </span>
             </div>
             ${job.vehicleReg ? `<div class="modal-detail-row">
