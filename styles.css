@@ -2492,16 +2492,6 @@ body {
     }
 }
 
-/* 7-item nav: hide labels on very small screens */
-@media (max-width: 390px) {
-    .nav-label {
-        display: none;
-    }
-    .nav-item {
-        justify-content: center;
-        padding: 10px 8px;
-    }
-}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }
