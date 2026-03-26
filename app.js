@@ -2320,10 +2320,10 @@ const app = {
                 <span class="modal-detail-label">Phone</span>
                 <span class="modal-detail-value">${job.customerPhone ? `<a href="tel:${job.customerPhone}" class="call-btn">📞 ${job.customerPhone}</a>` : '-'}</span>
             </div>
-            <div class="modal-detail-row">
-                <span class="modal-detail-label">Location</span>
-                <span class="modal-detail-value">
-                    ${job.postcode}${job.address ? ' · ' + job.address : ''}
+            <div class="modal-detail-row" style="align-items:flex-start;">
+                <span class="modal-detail-label" style="padding-top:2px;">Location</span>
+                <span class="modal-detail-value" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;max-width:65%;">
+                    <span>${job.postcode}${job.address ? ' · ' + job.address : ''}</span>
                     <a href="${getNavigationUrl(job)}" class="navigate-btn" target="_blank" rel="noopener noreferrer">🗺️ Navigate</a>
                 </span>
             </div>
