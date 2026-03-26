@@ -1739,6 +1739,7 @@ const app = {
     // ---- Calendar Drag & Drop ----
     _dragHandlersBound: false,
     _dragHandlers: null,
+    _moveConfirmTimer: null,
     initCalendarDragDrop() {
         const grid = document.getElementById('cal-grid');
         if (!grid) return;
@@ -1750,6 +1751,7 @@ const app = {
             calContainer.removeEventListener('pointerdown', this._dragHandlers.down);
             calContainer.removeEventListener('pointermove', this._dragHandlers.move);
             calContainer.removeEventListener('pointerup', this._dragHandlers.up);
+            calContainer.removeEventListener('pointercancel', this._dragHandlers.cancel);
         }
         if (this._dragHandlersBound && this._dragHandlers) return;
         this._dragHandlersBound = true;
@@ -1759,11 +1761,30 @@ const app = {
         let startX = 0, startY = 0;
         let isDragging = false;
         let originEl = null;
+        let longPressTimer = null;
+        let dragActivated = false;
+        let capturedPointerId = null;
         const self = this;
-        const DRAG_THRESHOLD = 5;
-        const SLOT_HEIGHT = 60; // px per hour
+        const DRAG_THRESHOLD = 5;       // px before drag starts (mouse)
+        const LONG_PRESS_DELAY = 500;   // ms hold required on touch
+        const TOUCH_CANCEL_DIST = 10;   // px movement that cancels long-press
+        const SLOT_HEIGHT = 60;
         const START_HOUR = 6;
         const SNAP_MINUTES = 15;
+
+        const cleanupDragState = () => {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (ghost) { ghost.remove(); ghost = null; }
+            if (originEl) {
+                originEl.style.opacity = '';
+                originEl.classList.remove('dragging');
+            }
+            dragJob = null;
+            originEl = null;
+            isDragging = false;
+            dragActivated = false;
+            capturedPointerId = null;
+        };
 
         const onPointerDown = (e) => {
             const grid = document.getElementById('cal-grid');
@@ -1779,9 +1800,30 @@ const app = {
             startY = e.clientY;
             isDragging = false;
             originEl = eventEl;
+            capturedPointerId = e.pointerId;
 
-            eventEl.setPointerCapture(e.pointerId);
-            e.preventDefault();
+            if (e.pointerType === 'mouse') {
+                // Desktop: activate drag immediately on movement
+                dragActivated = true;
+                eventEl.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            } else {
+                // Touch/stylus: require a long-press before drag activates
+                dragActivated = false;
+                longPressTimer = setTimeout(() => {
+                    longPressTimer = null;
+                    if (!originEl) return;
+                    dragActivated = true;
+                    originEl.setPointerCapture(capturedPointerId);
+                    if (navigator.vibrate) navigator.vibrate(30);
+                    // Brief scale pulse to confirm grab
+                    originEl.style.transition = 'transform 0.12s ease';
+                    originEl.style.transform = 'scale(1.06)';
+                    setTimeout(() => {
+                        if (originEl) { originEl.style.transform = ''; originEl.style.transition = ''; }
+                    }, 120);
+                }, LONG_PRESS_DELAY);
+            }
         };
 
         const onPointerMove = (e) => {
@@ -1789,6 +1831,19 @@ const app = {
 
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
+
+            // If long-press timer is still pending, cancel it if finger moved too far
+            if (longPressTimer && (Math.abs(dx) + Math.abs(dy) > TOUCH_CANCEL_DIST)) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                dragJob = null;
+                originEl = null;
+                dragActivated = false;
+                return;
+            }
+
+            // Don't start dragging until drag is activated
+            if (!dragActivated) return;
 
             if (!isDragging && Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return;
 
@@ -1828,18 +1883,15 @@ const app = {
         };
 
         const onPointerUp = (e) => {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
             if (!dragJob) return;
 
-            if (ghost) {
-                ghost.remove();
-                ghost = null;
-            }
+            if (ghost) { ghost.remove(); ghost = null; }
 
             const grid = document.getElementById('cal-grid');
             if (grid) grid.querySelectorAll('.cal-day-column').forEach(col => col.classList.remove('drag-over'));
 
             if (isDragging) {
-                // Find target column under cursor
                 if (originEl) {
                     originEl.style.opacity = '';
                     originEl.classList.remove('dragging');
@@ -1865,14 +1917,16 @@ const app = {
 
                         const newTime = this.minutesToTime(totalMinutes);
 
-                        // Update the job
                         const job = this.jobs.find(j => j.id === dragJob.id);
                         if (job) {
+                            const origDate = job.date;
+                            const origTime = job.time;
+                            // Optimistic update — show new position immediately
                             job.date = newDate;
                             job.time = newTime;
-                            this.saveData();
                             this.renderWeekCalendar();
-                            this.toast(`Moved to ${this.formatDateShort(newDate)} at ${this.formatTime(newTime)}`, 'success');
+                            // Ask for confirmation before persisting
+                            this.confirmJobMove(job, origDate, origTime, newDate, newTime);
                         }
                     }
                 }
@@ -1886,12 +1940,66 @@ const app = {
             dragJob = null;
             originEl = null;
             isDragging = false;
+            dragActivated = false;
+            capturedPointerId = null;
         };
 
-        this._dragHandlers = { down: onPointerDown, move: onPointerMove, up: onPointerUp };
+        const onPointerCancel = () => { cleanupDragState(); };
+
+        this._dragHandlers = { down: onPointerDown, move: onPointerMove, up: onPointerUp, cancel: onPointerCancel };
         calContainer.addEventListener('pointerdown', onPointerDown);
         calContainer.addEventListener('pointermove', onPointerMove);
         calContainer.addEventListener('pointerup', onPointerUp);
+        calContainer.addEventListener('pointercancel', onPointerCancel);
+    },
+
+    confirmJobMove(job, origDate, origTime, newDate, newTime) {
+        // Dismiss any prior move confirmation
+        const prev = document.getElementById('move-confirm-toast');
+        if (prev) prev.remove();
+        if (this._moveConfirmTimer) { clearTimeout(this._moveConfirmTimer); this._moveConfirmTimer = null; }
+
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.id = 'move-confirm-toast';
+        toast.className = 'toast toast-confirm';
+
+        const jobLabel = job.customerName || this.getJobLabel(job);
+        const newLabel = `${this.formatDateShort(newDate)} at ${this.formatTime(newTime)}`;
+
+        toast.innerHTML = `
+            <div class="toast-confirm-msg">Move <strong>${jobLabel}</strong> to ${newLabel}?</div>
+            <div class="toast-confirm-actions">
+                <button class="toast-btn toast-btn-confirm">Confirm</button>
+                <button class="toast-btn toast-btn-undo">Undo</button>
+            </div>
+        `;
+
+        const dismiss = () => { toast.remove(); };
+
+        const doConfirm = () => {
+            clearTimeout(this._moveConfirmTimer);
+            this.saveData();
+            dismiss();
+            this.toast(`Moved to ${newLabel}`, 'success');
+        };
+
+        const doUndo = () => {
+            clearTimeout(this._moveConfirmTimer);
+            job.date = origDate;
+            job.time = origTime;
+            this.renderWeekCalendar();
+            dismiss();
+            this.toast('Move undone', 'info');
+        };
+
+        toast.querySelector('.toast-btn-confirm').addEventListener('click', doConfirm);
+        toast.querySelector('.toast-btn-undo').addEventListener('click', doUndo);
+
+        container.appendChild(toast);
+
+        // Auto-confirm after 5 seconds if no action taken
+        this._moveConfirmTimer = setTimeout(doConfirm, 5000);
     },
 
     renderDayCalendar() {

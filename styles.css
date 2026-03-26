@@ -2060,6 +2060,32 @@ body {
 .toast-error { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
 .toast-info { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #fff; }
 
+.toast-confirm {
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.toast-confirm-msg { font-size: 13px; line-height: 1.4; }
+.toast-confirm-msg strong { color: #fff; }
+.toast-confirm-actions { display: flex; gap: 8px; }
+.toast-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    transition: opacity 0.15s;
+}
+.toast-btn:active { opacity: 0.75; }
+.toast-btn-confirm { background: var(--primary); color: #fff; }
+.toast-btn-undo { background: rgba(255,255,255,0.12); color: #f1f5f9; }
+
 @keyframes toastIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
