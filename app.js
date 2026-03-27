@@ -2533,8 +2533,8 @@ const app = {
         }
 
         // Wire up buttons
-        document.getElementById('modal-delete').onclick = () => {
-            if (confirm('Delete this job?')) this.deleteJob(job.id);
+        document.getElementById('modal-delete').onclick = async () => {
+            if (await showConfirm('Delete this job?', { confirmText: 'Delete', danger: true })) this.deleteJob(job.id);
         };
         document.getElementById('modal-edit').onclick = () => this.editJob(job.id);
         document.getElementById('modal-done').onclick = () => this.completeJob(job.id);
@@ -2643,10 +2643,10 @@ const app = {
         this.toast('Settings saved!', 'success');
     },
 
-    deleteJobType(key) {
+    async deleteJobType(key) {
         const type = this.getJobTypeInfo(key);
         const label = this.settings.jobLabels[key] || type.label;
-        if (!confirm(`Remove "${label}" from job types?\n\nExisting jobs with this type won't be affected.`)) return;
+        if (!await showConfirm(`Remove "${label}" from job types? Existing jobs with this type won't be affected.`, { confirmText: 'Remove', danger: true })) return;
         if (!this.settings.jobTypeOrder) {
             this.settings.jobTypeOrder = Object.keys(JOB_TYPES);
         }
@@ -2698,8 +2698,8 @@ const app = {
         localStorage.removeItem('lockroute_jotter');
     },
 
-    clearAllJobs() {
-        if (!confirm('Are you sure you want to delete ALL jobs? This cannot be undone.')) return;
+    async clearAllJobs() {
+        if (!await showConfirm('Are you sure you want to delete ALL jobs? This cannot be undone.', { confirmText: 'Delete All', danger: true })) return;
 
         // Clear Supabase data
         if (typeof cloudDB !== 'undefined' && supabaseReady) {
@@ -3199,8 +3199,8 @@ const app = {
             this.openCustomerEditForm(customer);
         };
 
-        document.getElementById('detail-delete-btn').onclick = () => {
-            if (confirm(`Delete customer "${customer.name}"? Their jobs will not be deleted.`)) {
+        document.getElementById('detail-delete-btn').onclick = async () => {
+            if (await showConfirm(`Delete customer "${customer.name}"? Their jobs will not be deleted.`, { confirmText: 'Delete', danger: true })) {
                 this.deleteCustomer(id);
             }
         };
@@ -3263,6 +3263,38 @@ const app = {
         this.renderCustomers();
     },
 };
+
+// ---- Confirm Modal ----
+function showConfirm(message, { confirmText = 'Confirm', danger = false } = {}) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('confirm-modal');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const overlay = document.getElementById('confirm-overlay');
+
+        msgEl.textContent = message;
+        okBtn.textContent = confirmText;
+        okBtn.className = 'btn ' + (danger ? 'btn-confirm-danger' : 'btn-primary');
+
+        modal.classList.add('active');
+
+        function cleanup(result) {
+            modal.classList.remove('active');
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onCancel);
+            resolve(result);
+        }
+
+        function onOk() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onCancel);
+    });
+}
 
 // ---- Initialize ----
 // Init is now called by supabase-config.js after auth succeeds
