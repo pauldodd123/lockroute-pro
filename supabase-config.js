@@ -161,6 +161,7 @@ const cloudDB = {
                 vatRate: data.vat_rate,
                 jobDurations: data.job_durations || {},
                 jobLabels: data.job_labels || {},
+                ...(data.duration_options ? { durationOptions: data.duration_options } : {}),
             };
         } catch (e) {
             console.error('Error loading settings from Supabase:', e);
@@ -241,6 +242,7 @@ const cloudDB = {
                 vat_rate: settings.vatRate,
                 job_durations: settings.jobDurations,
                 job_labels: settings.jobLabels,
+                duration_options: settings.durationOptions,
                 updated_at: new Date().toISOString(),
             });
             if (error) throw error;
