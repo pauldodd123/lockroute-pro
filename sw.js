@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lockroute-v1';
+const CACHE_NAME = 'lockroute-v20260327a';
 
 // Install — cache shell assets
 self.addEventListener('install', (event) => {

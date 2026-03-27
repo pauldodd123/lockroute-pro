@@ -1,0 +1,40 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject build version for cache busting
+        run: |
+          VERSION=$(date +%Y%m%d%H%M%S)
+          # Update ?v= query strings on local assets in app.html
+          sed -i "s/\?v=[0-9a-zA-Z]*/?v=${VERSION}/g" app.html
+          # Update service worker cache name so old caches are purged
+          sed -i "s/lockroute-v[0-9a-zA-Z]*/lockroute-v${VERSION}/g" sw.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
