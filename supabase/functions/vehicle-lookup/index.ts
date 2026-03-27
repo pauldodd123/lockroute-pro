@@ -6,6 +6,54 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+async function getDvsaToken(): Promise<string> {
+  const clientId = Deno.env.get("DVSA_CLIENT_ID")!;
+  const clientSecret = Deno.env.get("DVSA_CLIENT_SECRET")!;
+  const scopeUrl = Deno.env.get("DVSA_SCOPE_URL")!;
+  const tokenUrl = Deno.env.get("DVSA_TOKEN_URL")!;
+
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: scopeUrl,
+  });
+
+  const res = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  if (!res.ok) throw new Error(`DVSA token error (${res.status})`);
+  const json = await res.json();
+  return json.access_token;
+}
+
+async function getDvsaModel(registration: string): Promise<string | null> {
+  const apiKey = Deno.env.get("DVSA_API_KEY")!;
+  const token = await getDvsaToken();
+
+  const res = await fetch(
+    `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(registration)}`,
+    {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "x-api-key": apiKey,
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+  const data = await res.json();
+
+  // Response is an array; first entry has make/model
+  if (Array.isArray(data) && data.length > 0 && data[0].model) {
+    return data[0].model as string;
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -59,9 +107,18 @@ serve(async (req) => {
 
     const data = await response.json();
 
+    // Attempt DVSA MOT History lookup for model — failure is non-fatal
+    let model: string | null = null;
+    try {
+      model = await getDvsaModel(cleanReg);
+    } catch (_) {
+      // DVSA lookup failed (e.g. new vehicle with no MOT history) — proceed without model
+    }
+
     const vehicle = {
       registration: data.registrationNumber,
       make: data.make,
+      model: model,
       colour: data.colour,
       yearOfManufacture: data.yearOfManufacture,
       engineCapacity: data.engineCapacity,

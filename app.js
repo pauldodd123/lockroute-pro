@@ -2149,7 +2149,7 @@ const app = {
             const vehicleStr = (() => {
                 const v = job.vehicleInfo;
                 if (!v || !v.make) return job.vehicleReg || '';
-                const parts = [v.make, v.colour, v.yearOfManufacture ? `(${v.yearOfManufacture})` : ''].filter(Boolean);
+                const parts = [v.make, v.model].filter(Boolean);
                 return parts.join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
             })();
             html += `
@@ -2836,6 +2836,7 @@ const app = {
             const vehicleInfo = {
                 registrationNumber: data.registration || reg,
                 make: data.make,
+                model: data.model || null,
                 colour: data.colour,
                 yearOfManufacture: data.yearOfManufacture,
                 fuelType: data.fuelType,
@@ -2881,6 +2882,7 @@ const app = {
             const vehicleInfo = {
                 registrationNumber: data.registration || reg,
                 make: data.make,
+                model: data.model || null,
                 colour: data.colour,
                 yearOfManufacture: data.yearOfManufacture,
                 fuelType: data.fuelType,
@@ -2930,7 +2932,7 @@ const app = {
     formatVehicleInfo(info) {
         if (!info) return '';
         const reg = info.registrationNumber || '';
-        const makeText = [info.make, info.colour, info.yearOfManufacture ? `(${info.yearOfManufacture})` : ''].filter(Boolean).join(' ');
+        const makeText = [info.make, info.model].filter(Boolean).join(' ');
 
         let html = `<div class="vehicle-card-header">`;
         html += `<span class="vehicle-reg-plate">${reg}</span>`;
