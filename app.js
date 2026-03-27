@@ -2934,7 +2934,10 @@ const app = {
                 yearOfManufacture: data.yearOfManufacture,
                 fuelType: data.fuelType,
                 motStatus: data.motStatus,
+                motExpiryDate: data.motExpiryDate || null,
                 taxStatus: data.taxStatus,
+                engineCapacity: data.engineCapacity || null,
+                mileage: data.mileage || null,
             };
 
             this._lastVehicleInfo = vehicleInfo;
@@ -2979,7 +2982,10 @@ const app = {
                 yearOfManufacture: data.yearOfManufacture,
                 fuelType: data.fuelType,
                 motStatus: data.motStatus,
+                motExpiryDate: data.motExpiryDate || null,
                 taxStatus: data.taxStatus,
+                engineCapacity: data.engineCapacity || null,
+                mileage: data.mileage || null,
             };
 
             // Save to job in memory and persist
@@ -3037,6 +3043,13 @@ const app = {
             details.push({ label: 'Tax', value: info.taxStatus, cls: isValid ? 'tax-valid' : 'tax-expired' });
         }
         if (info.colour) details.push({ label: 'Colour', value: info.colour });
+        if (info.engineCapacity) details.push({ label: 'Engine', value: info.engineCapacity + 'cc' });
+        if (info.mileage) details.push({ label: 'Mileage', value: Number(info.mileage).toLocaleString() + ' mi' });
+        if (info.motExpiryDate) {
+            const d = new Date(info.motExpiryDate);
+            const formatted = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            details.push({ label: 'MOT Exp', value: formatted });
+        }
 
         if (details.length) {
             html += `<div class="vehicle-details-grid">`;

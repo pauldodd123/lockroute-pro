@@ -30,7 +30,12 @@ async function getDvsaToken(): Promise<string> {
   return json.access_token;
 }
 
-async function getDvsaModel(registration: string): Promise<string | null> {
+interface DvsaData {
+  model: string | null;
+  mileage: number | null;
+}
+
+async function getDvsaData(registration: string): Promise<DvsaData> {
   const apiKey = Deno.env.get("DVSA_API_KEY")!;
   const token = await getDvsaToken();
 
@@ -44,13 +49,24 @@ async function getDvsaModel(registration: string): Promise<string | null> {
     }
   );
 
-  if (!res.ok) return null;
+  if (!res.ok) return { model: null, mileage: null };
   const data = await res.json();
 
   // Response is a single object (not an array)
   const record = Array.isArray(data) ? data[0] : data;
-  if (record && record.model) return record.model as string;
-  return null;
+  const model = record?.model ?? null;
+
+  // Get mileage from most recent MOT test
+  let mileage: number | null = null;
+  if (record?.motTests?.length > 0) {
+    const raw = record.motTests[0].odometerValue;
+    if (raw != null) {
+      const parsed = parseInt(String(raw), 10);
+      if (!isNaN(parsed)) mileage = parsed;
+    }
+  }
+
+  return { model, mileage };
 }
 
 serve(async (req) => {
@@ -107,12 +123,15 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    // Attempt DVSA MOT History lookup for model — failure is non-fatal
+    // Attempt DVSA MOT History lookup for model + mileage — failure is non-fatal
     let model: string | null = null;
+    let mileage: number | null = null;
     try {
-      model = await getDvsaModel(cleanReg);
+      const dvsaData = await getDvsaData(cleanReg);
+      model = dvsaData.model;
+      mileage = dvsaData.mileage;
     } catch (_) {
-      // DVSA lookup failed (e.g. new vehicle with no MOT history) — proceed without model
+      // DVSA lookup failed (e.g. new vehicle with no MOT history) — proceed without model/mileage
     }
 
     const vehicle = {
@@ -121,13 +140,14 @@ serve(async (req) => {
       model: model,
       colour: data.colour,
       yearOfManufacture: data.yearOfManufacture,
-      engineCapacity: data.engineCapacity,
+      engineCapacity: data.engineCapacity ?? null,
       fuelType: data.fuelType,
       taxStatus: data.taxStatus,
       taxDueDate: data.taxDueDate,
       motStatus: data.motStatus,
-      motExpiryDate: data.motExpiryDate,
+      motExpiryDate: data.motExpiryDate ?? null,
       co2Emissions: data.co2Emissions,
+      mileage: mileage,
     };
 
     return new Response(
