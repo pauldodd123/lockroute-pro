@@ -86,6 +86,53 @@ const _geocodeCache = {};
 // Public token (pk.*) — safe for client-side use
 const MAPBOX_TOKEN = ['pk.eyJ1IjoicGF1bGRvZGQxMjMiLC', 'JhIjoiY21nZ3RocWlxMGZwMDJsczl0NXUxdGlndSJ9', '.kuA0Ty6VTDTaIqmzvKkNag'].join('');
 
+function showConfirm(message, { confirmText = 'Confirm', danger = false, requireInput = null } = {}) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('confirm-modal');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok-btn');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const inputWrapper = document.getElementById('confirm-input-wrapper');
+        const inputLabel = document.getElementById('confirm-input-label');
+        const inputEl = document.getElementById('confirm-input');
+
+        msgEl.textContent = message;
+        okBtn.textContent = confirmText;
+        okBtn.style.background = danger ? '#ef4444' : '#3b82f6';
+
+        if (requireInput) {
+            inputWrapper.style.display = 'block';
+            inputLabel.textContent = `Type "${requireInput}" to confirm`;
+            inputEl.value = '';
+            okBtn.disabled = true;
+            okBtn.style.opacity = '0.5';
+            inputEl.oninput = () => {
+                const matches = inputEl.value === requireInput;
+                okBtn.disabled = !matches;
+                okBtn.style.opacity = matches ? '1' : '0.5';
+            };
+        } else {
+            inputWrapper.style.display = 'none';
+            inputEl.oninput = null;
+            okBtn.disabled = false;
+            okBtn.style.opacity = '1';
+        }
+
+        modal.style.display = 'flex';
+        if (requireInput) inputEl.focus();
+
+        const cleanup = (result) => {
+            modal.style.display = 'none';
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            resolve(result);
+        };
+
+        okBtn.onclick = () => cleanup(true);
+        cancelBtn.onclick = () => cleanup(false);
+    });
+}
+
 function getNavigationUrl(job) {
     const parts = [job.address, job.postcode].filter(Boolean);
     const query = encodeURIComponent(parts.join(', '));
@@ -2533,8 +2580,8 @@ const app = {
         }
 
         // Wire up buttons
-        document.getElementById('modal-delete').onclick = () => {
-            if (confirm('Delete this job?')) this.deleteJob(job.id);
+        document.getElementById('modal-delete').onclick = async () => {
+            if (await showConfirm('Delete this job?', { confirmText: 'Delete', danger: true })) this.deleteJob(job.id);
         };
         document.getElementById('modal-edit').onclick = () => this.editJob(job.id);
         document.getElementById('modal-done').onclick = () => this.completeJob(job.id);
@@ -2643,10 +2690,10 @@ const app = {
         this.toast('Settings saved!', 'success');
     },
 
-    deleteJobType(key) {
+    async deleteJobType(key) {
         const type = this.getJobTypeInfo(key);
         const label = this.settings.jobLabels[key] || type.label;
-        if (!confirm(`Remove "${label}" from job types?\n\nExisting jobs with this type won't be affected.`)) return;
+        if (!await showConfirm(`Remove "${label}" from job types? Existing jobs with this type won't be affected.`, { confirmText: 'Remove', danger: true })) return;
         if (!this.settings.jobTypeOrder) {
             this.settings.jobTypeOrder = Object.keys(JOB_TYPES);
         }
@@ -2698,8 +2745,11 @@ const app = {
         localStorage.removeItem('lockroute_jotter');
     },
 
-    clearAllJobs() {
-        if (!confirm('Are you sure you want to delete ALL jobs? This cannot be undone.')) return;
+    async clearAllJobs() {
+        if (!await showConfirm(
+            'This will permanently delete ALL jobs and reset your data. This cannot be undone.',
+            { confirmText: 'Delete All', danger: true, requireInput: 'DELETE' }
+        )) return;
 
         // Clear Supabase data
         if (typeof cloudDB !== 'undefined' && supabaseReady) {
@@ -3199,8 +3249,8 @@ const app = {
             this.openCustomerEditForm(customer);
         };
 
-        document.getElementById('detail-delete-btn').onclick = () => {
-            if (confirm(`Delete customer "${customer.name}"? Their jobs will not be deleted.`)) {
+        document.getElementById('detail-delete-btn').onclick = async () => {
+            if (await showConfirm(`Delete customer "${customer.name}"? Their jobs will not be deleted.`, { confirmText: 'Delete', danger: true })) {
                 this.deleteCustomer(id);
             }
         };
