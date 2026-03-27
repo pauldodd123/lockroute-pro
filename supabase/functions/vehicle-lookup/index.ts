@@ -47,10 +47,9 @@ async function getDvsaModel(registration: string): Promise<string | null> {
   if (!res.ok) return null;
   const data = await res.json();
 
-  // Response is an array; first entry has make/model
-  if (Array.isArray(data) && data.length > 0 && data[0].model) {
-    return data[0].model as string;
-  }
+  // Response is a single object (not an array)
+  const record = Array.isArray(data) ? data[0] : data;
+  if (record && record.model) return record.model as string;
   return null;
 }
 
@@ -60,7 +59,8 @@ serve(async (req) => {
   }
 
   try {
-    const { registration } = await req.json();
+    const body = await req.json();
+    const registration = body.registration || body.registrationNumber;
 
     if (!registration) {
       return new Response(
