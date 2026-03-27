@@ -1452,7 +1452,8 @@ const app = {
             const timelineVehicleStr = (() => {
                 const v = job.vehicleInfo;
                 if (!v || !v.make) return job.vehicleReg || '';
-                return v.make + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
+                const makeModel = [v.make, v.model].filter(Boolean).join(' ');
+                return makeModel + (job.vehicleReg ? ` · ${job.vehicleReg}` : '');
             })();
             html += `
                 <div class="timeline-item" onclick="app.showJobModal('${job.id}')">
@@ -1519,7 +1520,7 @@ const app = {
         container.innerHTML = upcoming.map(job => {
             const v = job.vehicleInfo;
             const vehicleStr = v && v.make
-                ? v.make + (job.vehicleReg ? ` · ${job.vehicleReg}` : '')
+                ? [v.make, v.model].filter(Boolean).join(' ') + (job.vehicleReg ? ` · ${job.vehicleReg}` : '')
                 : (job.vehicleReg || '');
             return `
             <div class="upcoming-item" onclick="app.showJobModal('${job.id}')">
@@ -2944,11 +2945,10 @@ const app = {
 
             this.toast('Vehicle found', 'success');
         } catch (err) {
-            this._lastVehicleInfo = { registrationNumber: reg };
-            const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
-            const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
-            vInfo.innerHTML = `<div class="vehicle-card-header"><span class="vehicle-reg-plate">${displayReg}</span></div><div class="vehicle-links"><a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a><a href="${dvlaUrl}" target="_blank" rel="noopener">DVLA check ↗</a></div>`;
-            this.toast(err.message || 'Lookup failed', 'error');
+            this._lastVehicleInfo = null;
+            const isNotFound = err.message === 'Vehicle not found';
+            vInfo.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:4px 0;">${isNotFound ? `Vehicle not found for <strong>${displayReg}</strong>` : `Lookup failed: ${err.message || 'Unknown error'}`}</div>`;
+            this.toast(isNotFound ? 'Vehicle not found' : (err.message || 'Lookup failed'), 'error');
         }
     },
 
@@ -2996,14 +2996,8 @@ const app = {
         } catch (err) {
             const section = document.getElementById('modal-vehicle-section');
             if (section) {
-                const motUrl = `https://www.check-mot.service.gov.uk/results?registration=${encodeURIComponent(displayReg)}`;
-                const dvlaUrl = `https://vehicleenquiry.service.gov.uk/?v=${encodeURIComponent(displayReg)}`;
-                section.innerHTML = `<div class="vehicle-card-header"><span class="vehicle-reg-plate">${displayReg}</span></div>
-                    <div class="vehicle-links">
-                        <a href="${motUrl}" target="_blank" rel="noopener">MOT history ↗</a>
-                        <a href="${dvlaUrl}" target="_blank" rel="noopener">DVLA check ↗</a>
-                        <a href="#" onclick="app.refreshModalVehicleInfo('${job.id}');return false;">Retry ↺</a>
-                    </div>`;
+                const isNotFound = err.message === 'Vehicle not found';
+                section.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:4px 0;">${isNotFound ? `Vehicle not found for <strong>${displayReg}</strong>` : `Lookup failed: ${err.message || 'Unknown error'}`} <a href="#" onclick="app.refreshModalVehicleInfo('${job.id}');return false;">Retry ↺</a></div>`;
             }
         }
     },
