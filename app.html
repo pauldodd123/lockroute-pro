@@ -675,24 +675,6 @@
                         </div>
                     </div>
 
-                    <!-- Available Duration Options -->
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2>Duration Options</h2>
-                        </div>
-                        <div class="settings-body">
-                            <p class="settings-hint">These are the duration choices available when creating a job. Deleting an option won't affect existing jobs.</p>
-                            <div id="duration-options-list" class="duration-options-list">
-                                <!-- Filled dynamically -->
-                            </div>
-                            <div class="duration-add-row">
-                                <input type="text" id="new-duration-name" placeholder="e.g. 2.5 hr" class="duration-add-input" maxlength="20">
-                                <input type="number" id="new-duration-mins" placeholder="mins" class="duration-add-mins" min="1" max="480">
-                                <button class="btn btn-sm btn-primary" onclick="app.addDurationOption()">Add</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Default Job Durations -->
                     <div class="card settings-card">
                         <div class="card-header">
@@ -701,6 +683,13 @@
                         <div class="settings-body">
                             <div class="duration-settings" id="duration-settings">
                                 <!-- Filled dynamically -->
+                            </div>
+                            <div class="duration-add-row">
+                                <input type="text" id="new-job-type-name" placeholder="New job type name" class="duration-add-input" maxlength="50">
+                                <select id="new-job-type-duration">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <button class="btn btn-sm btn-primary" onclick="app.addJobType()">Add</button>
                             </div>
                         </div>
                     </div>

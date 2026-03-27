@@ -177,7 +177,8 @@ const app = {
         if (defaultOpt) select.appendChild(defaultOpt);
         else select.insertAdjacentHTML('afterbegin', '<option value="">Select job type...</option>');
 
-        for (const [key, type] of Object.entries(JOB_TYPES)) {
+        for (const key of this.getActiveJobTypes()) {
+            const type = this.getJobTypeInfo(key);
             const label = this.settings.jobLabels[key] || type.label;
             const opt = document.createElement('option');
             opt.value = key;
@@ -197,6 +198,16 @@ const app = {
         ).join('');
         // If the current value isn't in options, keep it selected
         if (!opts.find(o => o.minutes === current)) select.value = current;
+    },
+
+    getActiveJobTypes() {
+        const order = this.settings.jobTypeOrder;
+        if (!order || order.length === 0) return Object.keys(JOB_TYPES);
+        return order;
+    },
+
+    getJobTypeInfo(key) {
+        return JOB_TYPES[key] || (this.settings.customJobTypes && this.settings.customJobTypes[key]) || { label: key, icon: '🔧', color: '#6b7280', defaultDuration: 60 };
     },
 
     // Pre-geocode all job postcodes + home postcode so cache is warm
@@ -280,6 +291,7 @@ const app = {
             }
 
             // Re-render with cloud data
+            this.populateJobTypeDropdown();
             this.populateJobDurationDropdown();
             this.updateQuickStats();
             if (this.currentView === 'dashboard') this.renderDashboard();
@@ -2562,7 +2574,8 @@ const app = {
         // Job duration settings
         const durContainer = document.getElementById('duration-settings');
         const opts = s.durationOptions || DEFAULT_DURATION_OPTIONS;
-        durContainer.innerHTML = Object.entries(JOB_TYPES).map(([key, type]) => {
+        durContainer.innerHTML = this.getActiveJobTypes().map(key => {
+            const type = this.getJobTypeInfo(key);
             const currentDuration = s.jobDurations[key] || type.defaultDuration;
             const currentLabel = s.jobLabels[key] || type.label;
             // Build options; if current value isn't in the list, add it as "X min (custom)"
@@ -2577,11 +2590,19 @@ const app = {
                     <span class="duration-icon">${type.icon}</span>
                     <input type="text" class="job-label-input" data-job-label="${key}" value="${currentLabel}" placeholder="${type.label}">
                     <select data-job-type="${key}">${optionsHtml}</select>
+                    <button class="btn-icon btn-danger-icon" onclick="app.deleteJobType('${key}')" title="Remove job type">&#x2715;</button>
                 </div>
             `;
         }).join('');
 
-        this.renderDurationOptionsList();
+        // Populate the add-row duration select
+        const addDurSelect = document.getElementById('new-job-type-duration');
+        if (addDurSelect) {
+            const currentVal = addDurSelect.value || '60';
+            addDurSelect.innerHTML = opts.map(o =>
+                `<option value="${o.minutes}" ${o.minutes == currentVal ? 'selected' : ''}>${o.name}</option>`
+            ).join('');
+        }
     },
 
     saveSettings() {
@@ -2610,7 +2631,7 @@ const app = {
         this.settings.jobLabels = {};
         document.querySelectorAll('#duration-settings .job-label-input').forEach(inp => {
             const key = inp.dataset.jobLabel;
-            const defaultLabel = JOB_TYPES[key]?.label || '';
+            const defaultLabel = this.getJobTypeInfo(key).label;
             if (inp.value.trim() && inp.value.trim() !== defaultLabel) {
                 this.settings.jobLabels[key] = inp.value.trim();
             }
@@ -2622,54 +2643,46 @@ const app = {
         this.toast('Settings saved!', 'success');
     },
 
-    renderDurationOptionsList() {
-        const container = document.getElementById('duration-options-list');
-        if (!container) return;
-        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
-        container.innerHTML = opts.map((o, i) => `
-            <div class="duration-option-row" data-index="${i}">
-                <span class="duration-option-name">${o.name}</span>
-                <span class="duration-option-mins">${o.minutes} min</span>
-                <button class="btn-icon btn-danger-icon" onclick="app.deleteDurationOption(${i})" title="Delete">&#x2715;</button>
-            </div>
-        `).join('');
-    },
-
-    deleteDurationOption(index) {
-        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
-        const opt = opts[index];
-        if (!opt) return;
-        if (!confirm(`Remove "${opt.name}" from duration options?`)) return;
-        this.settings.durationOptions = opts.filter((_, i) => i !== index);
+    deleteJobType(key) {
+        const type = this.getJobTypeInfo(key);
+        const label = this.settings.jobLabels[key] || type.label;
+        if (!confirm(`Remove "${label}" from job types?\n\nExisting jobs with this type won't be affected.`)) return;
+        if (!this.settings.jobTypeOrder) {
+            this.settings.jobTypeOrder = Object.keys(JOB_TYPES);
+        }
+        this.settings.jobTypeOrder = this.settings.jobTypeOrder.filter(k => k !== key);
         this.saveData();
-        this.renderDurationOptionsList();
-        this.renderSettings(); // re-render per-type dropdowns so removed option disappears
-        this.populateJobDurationDropdown();
-        this.toast(`"${opt.name}" removed`, 'success');
+        this.renderSettings();
+        this.populateJobTypeDropdown();
+        this.toast(`"${label}" removed`, 'success');
     },
 
-    addDurationOption() {
-        const nameEl = document.getElementById('new-duration-name');
-        const minsEl = document.getElementById('new-duration-mins');
+    addJobType() {
+        const nameEl = document.getElementById('new-job-type-name');
+        const durEl = document.getElementById('new-job-type-duration');
         const name = nameEl.value.trim();
-        const minutes = parseInt(minsEl.value);
-        if (!name) { this.toast('Please enter a name', 'error'); return; }
-        if (!minutes || minutes < 1) { this.toast('Please enter valid minutes', 'error'); return; }
-        const opts = this.settings.durationOptions || [...DEFAULT_DURATION_OPTIONS];
-        if (opts.find(o => o.minutes === minutes)) {
-            this.toast('A duration with that length already exists', 'error');
+        if (!name) { this.toast('Please enter a job type name', 'error'); return; }
+        const minutes = parseInt(durEl.value) || 60;
+
+        // Generate a slug key
+        const key = 'custom-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+        if (!this.settings.jobTypeOrder) {
+            this.settings.jobTypeOrder = Object.keys(JOB_TYPES);
+        }
+        if (this.settings.jobTypeOrder.includes(key)) {
+            this.toast('A job type with a similar name already exists', 'error');
             return;
         }
-        // Insert in sorted order
-        opts.push({ name, minutes });
-        opts.sort((a, b) => a.minutes - b.minutes);
-        this.settings.durationOptions = opts;
+
+        if (!this.settings.customJobTypes) this.settings.customJobTypes = {};
+        this.settings.customJobTypes[key] = { label: name, icon: '🔧', defaultDuration: minutes };
+
+        this.settings.jobTypeOrder.push(key);
         this.saveData();
         nameEl.value = '';
-        minsEl.value = '';
-        this.renderDurationOptionsList();
         this.renderSettings();
-        this.populateJobDurationDropdown();
+        this.populateJobTypeDropdown();
         this.toast(`"${name}" added`, 'success');
     },
 
