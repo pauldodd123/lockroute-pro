@@ -1552,6 +1552,99 @@ body {
     transform: translateX(20px);
 }
 
+/* Duration Options Management */
+.settings-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.duration-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.duration-option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.duration-option-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.duration-option-mins {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.btn-danger-icon {
+    color: #ef4444;
+    opacity: 0.7;
+}
+
+.btn-danger-icon:hover {
+    opacity: 1;
+    background: #fee2e2;
+}
+
+.duration-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.duration-add-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: var(--font);
+    min-width: 0;
+}
+
+.duration-add-mins {
+    width: 70px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: var(--font);
+}
+
+.duration-add-input:focus,
+.duration-add-mins:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
 /* Duration Settings */
 .duration-settings {
     display: grid;

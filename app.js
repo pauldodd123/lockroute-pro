@@ -18,6 +18,18 @@ const JOB_TYPES = {
     'other':              { label: 'Other',                    icon: '📝', color: '#6b7280', category: 'other',      defaultDuration: 60 },
 };
 
+// ---- Default Duration Options ----
+const DEFAULT_DURATION_OPTIONS = [
+    { name: '15 min',  minutes: 15 },
+    { name: '30 min',  minutes: 30 },
+    { name: '45 min',  minutes: 45 },
+    { name: '1 hr',    minutes: 60 },
+    { name: '1.5 hr',  minutes: 90 },
+    { name: '2 hr',    minutes: 120 },
+    { name: '3 hr',    minutes: 180 },
+    { name: '4 hr',    minutes: 240 },
+];
+
 // ---- UK Postcode Areas (for grouping/estimating travel) ----
 const POSTCODE_AREAS = {
     // Major areas with approximate lat/lng for distance estimation
@@ -137,6 +149,7 @@ const app = {
         vatRate: 20,
         jobDurations: {},
         jobLabels: {},
+        durationOptions: [...DEFAULT_DURATION_OPTIONS],
     },
     currentView: 'dashboard',
     calendarDate: new Date(),
@@ -153,6 +166,7 @@ const app = {
         this.startTimeUpdater();
         this.preGeocodePostcodes();
         this.populateJobTypeDropdown();
+        this.populateJobDurationDropdown();
     },
 
     populateJobTypeDropdown() {
@@ -171,6 +185,18 @@ const app = {
             select.appendChild(opt);
         }
         if (current) select.value = current;
+    },
+
+    populateJobDurationDropdown() {
+        const select = document.getElementById('job-duration');
+        if (!select) return;
+        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
+        const current = parseInt(select.value) || 60;
+        select.innerHTML = opts.map(o =>
+            `<option value="${o.minutes}" ${current === o.minutes ? 'selected' : ''}>${o.name}</option>`
+        ).join('');
+        // If the current value isn't in options, keep it selected
+        if (!opts.find(o => o.minutes === current)) select.value = current;
     },
 
     // Pre-geocode all job postcodes + home postcode so cache is warm
@@ -254,6 +280,7 @@ const app = {
             }
 
             // Re-render with cloud data
+            this.populateJobDurationDropdown();
             this.updateQuickStats();
             if (this.currentView === 'dashboard') this.renderDashboard();
             if (this.currentView === 'calendar') this.renderCalendar();
@@ -2532,26 +2559,27 @@ const app = {
 
         // Job duration settings
         const durContainer = document.getElementById('duration-settings');
+        const opts = s.durationOptions || DEFAULT_DURATION_OPTIONS;
         durContainer.innerHTML = Object.entries(JOB_TYPES).map(([key, type]) => {
             const currentDuration = s.jobDurations[key] || type.defaultDuration;
             const currentLabel = s.jobLabels[key] || type.label;
+            // Build options; if current value isn't in the list, add it as "X min (custom)"
+            let optionsHtml = opts.map(o =>
+                `<option value="${o.minutes}" ${currentDuration === o.minutes ? 'selected' : ''}>${o.name}</option>`
+            ).join('');
+            if (!opts.find(o => o.minutes === currentDuration)) {
+                optionsHtml += `<option value="${currentDuration}" selected>${currentDuration} min</option>`;
+            }
             return `
                 <div class="duration-item">
                     <span class="duration-icon">${type.icon}</span>
                     <input type="text" class="job-label-input" data-job-label="${key}" value="${currentLabel}" placeholder="${type.label}">
-                    <select data-job-type="${key}">
-                        <option value="15" ${currentDuration === 15 ? 'selected' : ''}>15 min</option>
-                        <option value="30" ${currentDuration === 30 ? 'selected' : ''}>30 min</option>
-                        <option value="45" ${currentDuration === 45 ? 'selected' : ''}>45 min</option>
-                        <option value="60" ${currentDuration === 60 ? 'selected' : ''}>1 hr</option>
-                        <option value="90" ${currentDuration === 90 ? 'selected' : ''}>1.5 hr</option>
-                        <option value="120" ${currentDuration === 120 ? 'selected' : ''}>2 hr</option>
-                        <option value="180" ${currentDuration === 180 ? 'selected' : ''}>3 hr</option>
-                        <option value="240" ${currentDuration === 240 ? 'selected' : ''}>4 hr</option>
-                    </select>
+                    <select data-job-type="${key}">${optionsHtml}</select>
                 </div>
             `;
         }).join('');
+
+        this.renderDurationOptionsList();
     },
 
     saveSettings() {
@@ -2588,7 +2616,59 @@ const app = {
 
         this.saveData();
         this.populateJobTypeDropdown();
+        this.populateJobDurationDropdown();
         this.toast('Settings saved!', 'success');
+    },
+
+    renderDurationOptionsList() {
+        const container = document.getElementById('duration-options-list');
+        if (!container) return;
+        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
+        container.innerHTML = opts.map((o, i) => `
+            <div class="duration-option-row" data-index="${i}">
+                <span class="duration-option-name">${o.name}</span>
+                <span class="duration-option-mins">${o.minutes} min</span>
+                <button class="btn-icon btn-danger-icon" onclick="app.deleteDurationOption(${i})" title="Delete">&#x2715;</button>
+            </div>
+        `).join('');
+    },
+
+    deleteDurationOption(index) {
+        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
+        const opt = opts[index];
+        if (!opt) return;
+        if (!confirm(`Remove "${opt.name}" from duration options?`)) return;
+        this.settings.durationOptions = opts.filter((_, i) => i !== index);
+        this.saveData();
+        this.renderDurationOptionsList();
+        this.renderSettings(); // re-render per-type dropdowns so removed option disappears
+        this.populateJobDurationDropdown();
+        this.toast(`"${opt.name}" removed`, 'success');
+    },
+
+    addDurationOption() {
+        const nameEl = document.getElementById('new-duration-name');
+        const minsEl = document.getElementById('new-duration-mins');
+        const name = nameEl.value.trim();
+        const minutes = parseInt(minsEl.value);
+        if (!name) { this.toast('Please enter a name', 'error'); return; }
+        if (!minutes || minutes < 1) { this.toast('Please enter valid minutes', 'error'); return; }
+        const opts = this.settings.durationOptions || [...DEFAULT_DURATION_OPTIONS];
+        if (opts.find(o => o.minutes === minutes)) {
+            this.toast('A duration with that length already exists', 'error');
+            return;
+        }
+        // Insert in sorted order
+        opts.push({ name, minutes });
+        opts.sort((a, b) => a.minutes - b.minutes);
+        this.settings.durationOptions = opts;
+        this.saveData();
+        nameEl.value = '';
+        minsEl.value = '';
+        this.renderDurationOptionsList();
+        this.renderSettings();
+        this.populateJobDurationDropdown();
+        this.toast(`"${name}" added`, 'success');
     },
 
     logout() {
