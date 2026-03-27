@@ -1624,6 +1624,7 @@ body {
     padding: 10px 14px;
     background: var(--bg);
     border-radius: var(--radius-sm);
+    min-width: 0;
 }
 .duration-icon {
     font-size: 16px;
