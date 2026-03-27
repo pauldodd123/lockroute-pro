@@ -18,8 +18,8 @@ const JOB_TYPES = {
     'other':              { label: 'Other',                    icon: '📝', color: '#6b7280', category: 'other',      defaultDuration: 60 },
 };
 
-// ---- Default Duration Options ----
-const DEFAULT_DURATION_OPTIONS = [
+// ---- Duration Presets ----
+const DURATION_PRESETS = [
     { name: '15 min',  minutes: 15 },
     { name: '30 min',  minutes: 30 },
     { name: '45 min',  minutes: 45 },
@@ -149,7 +149,7 @@ const app = {
         vatRate: 20,
         jobDurations: {},
         jobLabels: {},
-        durationOptions: [...DEFAULT_DURATION_OPTIONS],
+        jobTypeOrder: null,
     },
     currentView: 'dashboard',
     calendarDate: new Date(),
@@ -191,7 +191,7 @@ const app = {
     populateJobDurationDropdown() {
         const select = document.getElementById('job-duration');
         if (!select) return;
-        const opts = this.settings.durationOptions || DEFAULT_DURATION_OPTIONS;
+        const opts = DURATION_PRESETS;
         const current = parseInt(select.value) || 60;
         select.innerHTML = opts.map(o =>
             `<option value="${o.minutes}" ${current === o.minutes ? 'selected' : ''}>${o.name}</option>`
@@ -2573,7 +2573,7 @@ const app = {
 
         // Job duration settings
         const durContainer = document.getElementById('duration-settings');
-        const opts = s.durationOptions || DEFAULT_DURATION_OPTIONS;
+        const opts = DURATION_PRESETS;
         durContainer.innerHTML = this.getActiveJobTypes().map(key => {
             const type = this.getJobTypeInfo(key);
             const currentDuration = s.jobDurations[key] || type.defaultDuration;
