@@ -3314,37 +3314,6 @@ const app = {
     },
 };
 
-// ---- Confirm Modal ----
-function showConfirm(message, { confirmText = 'Confirm', danger = false } = {}) {
-    return new Promise(resolve => {
-        const modal = document.getElementById('confirm-modal');
-        const msgEl = document.getElementById('confirm-message');
-        const okBtn = document.getElementById('confirm-ok');
-        const cancelBtn = document.getElementById('confirm-cancel');
-        const overlay = document.getElementById('confirm-overlay');
-
-        msgEl.textContent = message;
-        okBtn.textContent = confirmText;
-        okBtn.className = 'btn ' + (danger ? 'btn-confirm-danger' : 'btn-primary');
-
-        modal.classList.add('active');
-
-        function cleanup(result) {
-            modal.classList.remove('active');
-            okBtn.removeEventListener('click', onOk);
-            cancelBtn.removeEventListener('click', onCancel);
-            overlay.removeEventListener('click', onCancel);
-            resolve(result);
-        }
-
-        function onOk() { cleanup(true); }
-        function onCancel() { cleanup(false); }
-
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-        overlay.addEventListener('click', onCancel);
-    });
-}
 
 // ---- Initialize ----
 // Init is now called by supabase-config.js after auth succeeds
