@@ -2941,3 +2941,37 @@ a.detail-value {
     color: var(--text-muted);
     margin-top: 4px;
 }
+
+/* Danger Zone */
+.danger-zone {
+    margin-top: 2rem;
+    border: none !important;
+    border-left: 4px solid var(--danger) !important;
+    border-radius: 8px;
+    background: #fff5f5;
+    padding: 1.25rem 1.5rem;
+}
+
+.danger-zone-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.danger-zone-header h3 {
+    color: var(--danger);
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.danger-zone-icon {
+    font-size: 1.1rem;
+}
+
+.danger-zone p {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin: 0 0 1rem;
+}
