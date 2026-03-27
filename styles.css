@@ -1938,6 +1938,52 @@ body {
     font-size: 14px;
 }
 
+/* ---- Confirm Modal ---- */
+.confirm-modal-content {
+    max-width: 360px !important;
+}
+
+.confirm-modal-body {
+    padding: 28px 24px 20px;
+    text-align: center;
+}
+
+.confirm-modal-body p {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text);
+    margin: 0;
+}
+
+.confirm-modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 0 24px 24px;
+    justify-content: center;
+}
+
+.confirm-modal-footer .btn {
+    flex: 1;
+    padding: 13px 20px;
+    font-size: 15px;
+}
+
+.btn-confirm-danger {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-confirm-danger:hover {
+    background: #dc2626;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+    transform: translateY(-2px);
+}
+
+.btn-confirm-danger:active {
+    transform: translateY(0) scale(0.98);
+}
+
 /* ---- Modal ---- */
 .modal {
     display: none;
